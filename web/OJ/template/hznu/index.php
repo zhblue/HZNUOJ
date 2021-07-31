@@ -20,9 +20,9 @@ require_once('./include/db_info.inc.php');
 
 <style>
   .bg{
-    background-image: url(template/<?php echo $OJ_TEMPLATE ?>/ojINDEX.jpg);
     background-repeat: no-repeat;
     background-position: center 0px;
+    background-image: url(template/<?php echo $OJ_TEMPLATE ?>/ojINDEX.jpg)
   }
   #slider {
     height: 300px;
@@ -127,21 +127,19 @@ $series_total_submit="";
 for($i=$tot_days-1 ; $i>=0 ; --$i){
     
 	
-    $sql="SELECT count(1) FROM solution WHERE in_date<=date_add(date(NOW()), interval -$i+1 day) AND in_date>date_add(date(NOW()), interval -$i day) AND result != 4";
+    $sql="SELECT * FROM `log_chart` WHERE `log_date`=date_add(date(NOW()), interval -$i day)";
     $res=$mysqli->query($sql);
-    $cnt=$res->fetch_array()[0];
-    $series_not_ac_data.="$cnt,";
-    
-    $sql="SELECT count(1) FROM solution WHERE in_date<=date_add(date(NOW()), interval -$i+1 day) AND in_date>date_add(date(NOW()), interval -$i day) AND result = 4";
-    $res=$mysqli->query($sql);
-    $cnt2=$res->fetch_array()[0];
-    $series_ac_data.="$cnt2,";	
-	  $series_total_submit.="$cnt+$cnt2,";
-    
-    $sql="SELECT count(1) FROM hit_log WHERE time<=date_add(date(NOW()), interval -$i+1 day) AND time>date_add(date(NOW()), interval -$i day)";
-    $res=$mysqli->query($sql);
-    $cnt=$res->fetch_array()[0];
-    $series_hits_data.="$cnt,";
+    if ($row=$res->fetch_object()){
+      $series_not_ac_data.="$row->solution_wrong,"; 
+      $series_ac_data.="$row->solution_ac,";
+      $series_total_submit.="$row->solution_wrong+$row->solution_ac,";
+      $series_hits_data.="$row->hit_log,";
+    } else {
+      $series_not_ac_data.="0,"; 
+      $series_ac_data.="0,";
+      $series_total_submit.="0,";
+      $series_hits_data.="0,";
+    }
 	
   	$xAxis_data .="'".date('m/d',strtotime("-$i day"))."',";    
 }

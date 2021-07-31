@@ -89,7 +89,7 @@
   $MSG_SUBMISSIONS = "提交量";
   $MSG_SUBMISSION = "提交";
   $MSG_SUNMITTOTAL = "总提交";
-  $MSG_HINTS= "访问量";  
+  $MSG_HINTS= "点击量";  
   $MSG_SERVERTIME = "服务器时间";
   $MSG_MAINTAINER = "Maintainer List";
   $MSG_ALL = "全部";

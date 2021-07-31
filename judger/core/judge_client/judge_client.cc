@@ -976,6 +976,14 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
   {
     //              printf("..update failed! %s\n",mysql_error(conn));
   }
+  //更新本日提交的AC数和错误数
+  sprintf(sql,
+            "UPDATE `log_chart` SET `solution_wrong`=(SELECT count(solution_id) FROM `%s` WHERE `in_date`<=date_add(CURRENT_DATE(), interval 1 day) AND in_date>=CURRENT_DATE() AND result != 4), `solution_ac`=(SELECT count(solution_id) FROM `%s` WHERE `in_date`<=date_add(CURRENT_DATE(), interval 1 day) AND in_date>=CURRENT_DATE() AND result = 4) wHERE `log_date`=CURRENT_DATE()",
+            tbname, tbname);
+  if (mysql_real_query(conn, sql, strlen(sql)))
+  {
+    //              printf("..update failed! %s\n",mysql_error(conn));
+  }
   if (sim)
   {
     sprintf(sql,

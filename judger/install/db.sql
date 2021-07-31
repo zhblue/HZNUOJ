@@ -539,6 +539,14 @@ CREATE TABLE IF NOT EXISTS `points_log` (
   KEY `solution_id` (`solution_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `log_chart` ( 
+  `log_date` DATE NOT NULL ,
+  `solution_wrong` INT(11) NULL DEFAULT '0',
+  `solution_ac` INT(11) NOT NULL DEFAULT '0',
+  `hit_log` INT(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`log_date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 -- 添加触发器，防止同一用户类似代码提交第二遍时被认定为抄袭
 delimiter //
 drop trigger if exists simfilter//

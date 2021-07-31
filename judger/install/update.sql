@@ -97,3 +97,11 @@ CREATE TABLE IF NOT EXISTS `points_log` (
 ALTER TABLE `class_list` ADD `give_points` DECIMAL(10,2) NOT NULL DEFAULT '0.00' AFTER `enrollment_year`;
 ALTER TABLE `users` ADD `activateCode` VARCHAR(48) NOT NULL DEFAULT '' AFTER `points`;
 ALTER TABLE `users` ADD `activateTimelimit` datetime DEFAULT NULL AFTER `activateCode`;
+
+CREATE TABLE `log_chart` ( 
+  `log_date` DATE NOT NULL ,
+  `solution_wrong` INT(11) NULL DEFAULT '0',
+  `solution_ac` INT(11) NOT NULL DEFAULT '0',
+  `hit_log` INT(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`log_date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
