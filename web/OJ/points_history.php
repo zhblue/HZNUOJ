@@ -66,6 +66,15 @@
     } else if ($page < 1) $page = 1;
     $pstart = $rank = $page_cnt*$page-$page_cnt;
     $pend = $page_cnt;   
+    if($page > 1){
+        $payPoints = 0;
+        $sql = "SELECT `pay_points` FROM `points_log` WHERE `user_id`='$user' ORDER BY `pay_time` DESC limit 0, $rank";
+        $result=$mysqli->query($sql);
+        while($row=$result->fetch_object()){
+            $payPoints += $row->pay_points;
+        }
+        $points -= $payPoints;
+    }
     $view_logs = array();
     $cnt = 0;
 	$sql = "SELECT * FROM `points_log` WHERE `user_id`='$user' ORDER BY `pay_time` DESC";
