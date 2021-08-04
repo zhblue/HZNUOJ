@@ -52,19 +52,19 @@ set encoding=prc
 
 ### 重启服务器
 
-如果服务器意外关机，可以通过如下步骤重新运行（不要按照上面的教程再run一遍）：
+如果服务器意外关机，可以通过如下步骤重新运行（不要按照上面的教程再run一遍）。若以容器方式运行，则先进入容器的命令行界面：
 
 `docker start hznuoj2.1`
 
 `docker attach hznuoj2.1`
 
-然后重启三个服务即可
+重启三个服务即可
 
-`service apache2 restart`
+`service nginx restart`
 
 `service mysql restart`
 
-`sudo judged`
+`sudo pkill -9 judged && sudo judged`
 
 ### 一个小BUG
 
@@ -97,3 +97,13 @@ set encoding=prc
 3、根据需要修改`OJ/include/static.php`中的$OJ_LANGMASK，调整开放的编程语言，具体参看[HZNUOJ配置手册](Configuration.md)或者配置文件中的注释。
 
 4、**注意**：Ubuntu14系统中php版本为PHP5，而HZNUOJ的web部分是基于PHP7，因此若待升级hustoj跑在Ubuntu14上，请先将PHP5升级至PHP7（未测试），或将系统更换或升级成Ubuntu16或Ubuntu18后，再升级成HZNUOJ系统。
+
+### 单独升级判题机
+
+判题机更新后，可单独编译更新判题机，判题机源代码路径：HZNUOJ/judger/core
+
+   ```bash
+   admin@ubuntu16:~$ git clone https://github.com/wlx65003/HZNUOJ.git
+   admin@ubuntu16:~$ cd HZNUOJ/judger/install
+   admin@ubuntu16:~/HZNUOJ/judger/install$ sudo bash upgrade_core.sh
+   ```

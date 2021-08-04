@@ -72,6 +72,13 @@ OJ_COMPILE_CHROOT=1
 
 OJ_TURBO_MODE=0
 
+OJ_points_enable=1    #是否开启积分功能，1开启，0关闭
+
+OJ_points_AC=1        #提交的代码非第一次AC奖励xx个积分
+
+OJ_points_firstAC=1   #提交的代码第一次AC奖励xx个积分
+
+OJ_points_Wrong=0     #提交的代码错误扣除xx个积分
 
 ## = static.php =
 
@@ -185,6 +192,14 @@ static  $OJ_show_PrinterAndDiscussInContest=true;//是否在比赛页面显示Co
 
 static  $OJ_show_contestSolutionInStatus=false;//是否在status.php中显示contest中提交的代码
  
+//积分功能
+
+static $OJ_points_enable=false;//是否开启积分功能，true开启，false关闭
+
+static $OJ_points_reChange=false;//是否开启积分自助充值功能，true开启，false关闭
+
+static $OJ_points_submit=1;//提交一次代码扣1个积分
+
 /* Email configuration */
 
 static $SMTP_SERVER = "smtp.exmail.qq.com";

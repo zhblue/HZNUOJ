@@ -449,3 +449,50 @@ CREATE TABLE IF NOT EXISTS `share_code` (
 ) ENGINE=MyISAM AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 ALTER TABLE `reply` MODIFY COLUMN `ip` varchar(46) DEFAULT NULL;
 ALTER TABLE `online` MODIFY COLUMN `ip` varchar(46) CHARACTER SET utf8 NOT NULL DEFAULT '';
+-- 20210804更新
+-- 老版的hustoj表`contest_problem`没有记录比赛题目数据的`c_accepted`、`c_submit`字段，新版有
+DROP PROCEDURE IF EXISTS AddCOLUMN_C;
+delimiter //
+create procedure AddCOLUMN_C()
+begin
+    SELECT count(*) INTO @cnt FROM information_schema.columns WHERE `TABLE_SCHEMA` ='jol' AND `TABLE_NAME` = 'contest_problem' AND `COLUMN_NAME` = 'c_accepted';
+    IF @cnt=0 THEN
+        ALTER TABLE `solution` ADD COLUMN `nick` char(20) NOT NULL DEFAULT '' AFTER `user_id`;
+        ALTER TABLE `contest_problem` ADD COLUMN `c_accepted` int(11) NOT NULL DEFAULT '0' AFTER `num`;
+        ALTER TABLE `contest_problem` ADD COLUMN `c_submit` int(11) NOT NULL DEFAULT '0' AFTER `c_accepted`;
+        UPDATE `contest_problem` SET `c_submit`=(SELECT count(*) FROM `solution` WHERE `problem_id`=`contest_problem`.`problem_id` AND contest_id=`contest_problem`.`contest_id`);
+        UPDATE `contest_problem` SET `c_accepted`=(SELECT count(*) FROM `solution` WHERE `problem_id`=`contest_problem`.`problem_id` AND `result`=4 AND contest_id=`contest_problem`.`contest_id`);
+    END IF;
+end; //
+delimiter ;
+call AddCOLUMN_C();
+drop procedure AddCOLUMN_C;
+
+ALTER TABLE `problem` CHANGE `time_limit` `time_limit` DECIMAL(10,3) NOT NULL DEFAULT '0';
+ALTER TABLE `users` ADD COLUMN `points` decimal(10,2) DEFAULT '0.00';
+ALTER TABLE `solution` ADD `lastresult` SMALLINT(6) NOT NULL DEFAULT '0' AFTER `judger`;
+UPDATE `solution` SET `lastresult`=`result`;
+
+CREATE TABLE `points_log` (
+  `index` int(11) NOT NULL AUTO_INCREMENT,
+  `item` varchar(100) NOT NULL,
+  `operator` varchar(48) NOT NULL DEFAULT '',
+  `user_id` varchar(48) NOT NULL DEFAULT '',
+  `solution_id` int(11) NOT NULL DEFAULT '0',
+  `pay_type` tinyint(4) NOT NULL,
+  `pay_points` DECIMAL(10,2) NOT NULL,
+  `pay_time` DATETIME NOT NULL,
+  PRIMARY KEY (`index`),
+  KEY `solution_id` (`solution_id`) USING BTREE
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+ALTER TABLE `class_list` ADD `give_points` DECIMAL(10,2) NOT NULL DEFAULT '0.00' AFTER `enrollment_year`;
+ALTER TABLE `users` ADD `activateCode` VARCHAR(48) NOT NULL DEFAULT '' AFTER `points`;
+ALTER TABLE `users` ADD `activateTimelimit` datetime DEFAULT NULL AFTER `activateCode`;
+
+CREATE TABLE `log_chart` ( 
+  `log_date` DATE NOT NULL ,
+  `solution_wrong` INT(11) NULL DEFAULT '0',
+  `solution_ac` INT(11) NOT NULL DEFAULT '0',
+  `hit_log` INT(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`log_date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
