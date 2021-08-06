@@ -204,6 +204,10 @@ if(isset($_POST['update_solution'])){
 		$sql="UPDATE `solution` SET `result`=$result,`time`=$time,`memory`=$memory,`judgetime`=NOW(),`pass_rate`=$pass_rate,`judger`='$judger' WHERE solution_id=$sid LIMIT 1";
 		$mysqli->query($sql);
 	}	
+	//更新本日提交的AC数和错误数
+	$sql="UPDATE `log_chart` SET `solution_wrong`=(SELECT count(solution_id) FROM `solution` WHERE `in_date`<=date_add(CURRENT_DATE(), interval 1 day) AND in_date>=CURRENT_DATE() AND result != 4), `solution_ac`=(SELECT count(solution_id) FROM `solution` WHERE `in_date`<=date_add(CURRENT_DATE(), interval 1 day) AND in_date>=CURRENT_DATE() AND result = 4) WHERE `log_date`=CURRENT_DATE()";
+	$mysqli->query($sql);
+
     if ($sim) {
 		$sql="insert into sim(s_id,sim_s_id,sim) values($sid,$simid,$sim) on duplicate key update  sim_s_id=$simid,sim=$sim";
 		$mysqli->query($sql);
