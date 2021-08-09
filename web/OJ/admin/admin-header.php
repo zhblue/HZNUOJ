@@ -15,6 +15,7 @@ if(preg_match("/\/admin\/quixplorer\//i", $_SERVER['SCRIPT_NAME'])) {
   $baseDir="..";
   $urlbaseDir=".";
 }
+global $mysqli;
 require_once("$baseDir/include/db_info.inc.php");
 /*Count the hit time START*/
 //if($_SERVER['REMOTE_ADDR']!='127.0.0.1') {
@@ -49,7 +50,6 @@ require_once("$baseDir/include/db_info.inc.php");
 <?php 
   require_once("$baseDir/include/setlang.php");
   $html_title = $MSG_DASHBOARD."--";
-  global $mysqli;
   if (!HAS_PRI('enter_admin_page')) {
     echo "<h1><a href='$baseDir/loginpage.php'>Premission Denied! Please Log in!</a></h1>";
     exit(0);
