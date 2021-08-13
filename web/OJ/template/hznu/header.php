@@ -21,10 +21,10 @@
   if(!isset($mysqli))exit(0);
   /*Count the hit time START*/
   //if($_SERVER['REMOTE_ADDR']!='127.0.0.1') {
-    $user_id="";
-    if(isset($_SESSION['user_id'])) $user_id=$_SESSION['user_id'];
+    $user_id2="";
+    if(isset($_SESSION['user_id'])) $user_id2=$_SESSION['user_id'];
     $require_path=$mysqli->real_escape_string($_SERVER['REQUEST_URI']);
-    $sql="INSERT INTO hit_log (ip, time, path, user_id) VALUES ('{$_SERVER['REMOTE_ADDR']}', NOW(), '$require_path', '$user_id')";
+    $sql="INSERT INTO hit_log (ip, time, path, user_id) VALUES ('{$_SERVER['REMOTE_ADDR']}', NOW(), '$require_path', '$user_id2')";
     $mysqli->query($sql);
     $sql="INSERT INTO `log_chart`(`log_date`,`hit_log`) VALUES(CURRENT_DATE(),1) ON DUPLICATE KEY UPDATE `hit_log`=`hit_log`+1";
     //$sql.="(SELECT count(`time`) FROM `hit_log` WHERE `time`<date_add(CURRENT_DATE(), interval 1 day) AND `time`>=CURRENT_DATE())";
