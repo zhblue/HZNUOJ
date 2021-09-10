@@ -273,7 +273,7 @@ while ($row = $result->fetch_object()) {
                     ?>
                         <tr>
                             <td colspan="<?php echo $colspan ?>">
-                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","class_edit.php?del&getkey=<?php echo $_SESSION['getkey'] ?>");'>
+                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","class_edit.php?del&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
                             </td>
                         </tr>
                         <tr>

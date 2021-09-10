@@ -352,7 +352,7 @@ switch ($args['function']) {
 		}		
 		if ($res > 0){
 			echo "<script language='javascript'>\n";
-			echo "alert('$MSG_Undo."/".$MSG_DEL.$res 条$MSG_PointsHistory');\n";
+			echo "alert('{$MSG_Undo}/{$MSG_DEL}$res 条$MSG_PointsHistory');\n";
 			echo "history.go(-1);\n</script>";
 			exit(0);
 		} else if(isset($_POST['class']) || isset($_POST['uids'])){
@@ -585,7 +585,7 @@ switch ($args['function']) {
             <thead>
 				<tr>
 					<td colspan="9">
-					 <input type="submit" name="delete" class="btn btn-success" value="<?php echo $MSG_Undo."/".$MSG_DEL ?>" onclick='javascript:if(confirm("<?php echo $MSG_Undo."/".$MSG_DEL ?>?")) $("form").attr("action","points.php?function=3&getkey=<?php echo $_SESSION['getkey'] ?>");'>
+					 <input type="submit" name="delete" class="btn btn-success" value="<?php echo $MSG_Undo."/".$MSG_DEL ?>" onclick='javascript:if(confirm("<?php echo $MSG_Undo."/".$MSG_DEL ?>?")) $("form").attr("action","points.php?function=3&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
 					</td>
 				</tr>
                 <tr>

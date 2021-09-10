@@ -87,6 +87,7 @@
     echo "</script>";
 
   } else {
+    $_SESSION['gotoIndex'] = true;
     echo "<script language='javascript'>\n";
     echo "alert('$MSG_LoginError');\n";
 	  echo "window.location.href='loginpage.php';";  //echo "history.go(-1);\n";

@@ -424,7 +424,7 @@ if (!isset($_GET['team'])) { //查询普通账号
                     <?php if (HAS_PRI("edit_user_profile")) { ?>
                         <tr>
                             <td colspan=<?php echo $colspan + 2 ?>>
-                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","user_edit.php?del&getkey=<?php echo $_SESSION['getkey'] ?>");'>&nbsp;
+                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","user_edit.php?del&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>&nbsp;
                                 <input type=submit name='enable' class='btn btn-default' value='<?php echo $MSG_Available ?>'>&nbsp;
                                 <input type=submit name='disable' class='btn btn-default' value='<?php echo $MSG_Reserved ?>'>
                                 <?php if (isset($OJ_NEED_CLASSMODE) && $OJ_NEED_CLASSMODE) { 
@@ -444,7 +444,7 @@ if (!isset($_GET['team'])) { //查询普通账号
                                     }
                                 ?>
                                 </select>&nbsp;
-                                <input type=submit name='changeClass' class='btn btn-default' value='<?php echo $MSG_ChangeClass ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeClass ?>?")) $("form").attr("action","user_edit.php?getkey=<?php echo $_SESSION['getkey'] ?>");'>
+                                <input type=submit name='changeClass' class='btn btn-default' value='<?php echo $MSG_ChangeClass ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeClass ?>?")) $("form").attr("action","user_edit.php?getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
                                 <?php }?>
                             </td>
                         </tr>
@@ -506,8 +506,8 @@ if (!isset($_GET['team'])) { //查询普通账号
                     ?>
                         <tr>
                             <td colspan=<?php echo $colspan ?>>
-                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","user_edit.php?team&del&getkey=<?php echo $_SESSION['getkey'] ?>");'>&nbsp;
-                                <input type=submit name='resetpwd' class='btn btn-default' value='<?php echo $MSG_RESET . $MSG_PASSWORD ?>' onclick='javascript:if(confirm("<?php echo $MSG_RESET . $MSG_TEAM . $MSG_PASSWORD ?>?")) $("form").attr("action","user_edit.php?resetpwd&getkey=<?php echo $_SESSION['getkey'] ?>");'>
+                                <input type=submit name='delete' class='btn btn-default' value='<?php echo $MSG_DEL ?>' onclick='javascript:if(confirm("<?php echo $MSG_DEL ?>?")) $("form").attr("action","user_edit.php?team&del&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>&nbsp;
+                                <input type=submit name='resetpwd' class='btn btn-default' value='<?php echo $MSG_RESET . $MSG_PASSWORD ?>' onclick='javascript:if(confirm("<?php echo $MSG_RESET . $MSG_TEAM . $MSG_PASSWORD ?>?")) $("form").attr("action","user_edit.php?resetpwd&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
                                 <?php if (isset($OJ_NEED_CLASSMODE) && $OJ_NEED_CLASSMODE) { 
                                     require_once("../include/classList.inc.php");
                                     $classList = get_classlist(true, "");
@@ -525,7 +525,7 @@ if (!isset($_GET['team'])) { //查询普通账号
                                     }
                                 ?>
                                 </select>&nbsp;
-                                <input type=submit name='changeClass' class='btn btn-default' value='<?php echo $MSG_ChangeClass ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeClass ?>?")) $("form").attr("action","user_edit.php?team&getkey=<?php echo $_SESSION['getkey'] ?>");'>
+                                <input type=submit name='changeClass' class='btn btn-default' value='<?php echo $MSG_ChangeClass ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeClass ?>?")) $("form").attr("action","user_edit.php?team&getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
                                 <?php }?>
                                 &nbsp;&nbsp;|&nbsp;&nbsp;
                                 <select name="new_contest_id" class="selectpicker show-tick" data-live-search="true" data-width="auto"  data-size="8" data-title="选择一个<?php echo $MSG_CONTEST ?>">
@@ -542,7 +542,7 @@ if (!isset($_GET['team'])) { //查询普通账号
                                     <?php }
                                     endforeach  ?>
                                 </select>&nbsp;
-                                <input type=submit name='changeTeamContest' class='btn btn-default' value='<?php echo $MSG_ChangeTeamContest ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeTeamContest ?>?")) $("form").attr("action","user_edit.php?getkey=<?php echo $_SESSION['getkey'] ?>");'>
+                                <input type=submit name='changeTeamContest' class='btn btn-default' value='<?php echo $MSG_ChangeTeamContest ?>' onclick='javascript:if(confirm("<?php echo $MSG_ChangeTeamContest ?>?")) $("form").attr("action","user_edit.php?getkey=<?php echo $_SESSION['getkey'] ?>"); else return false;'>
                             </td>
                         </tr>
                         <tr>
