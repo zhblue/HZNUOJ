@@ -66,6 +66,7 @@
   static  $OJ_NEED_LOGIN=false; //需要登录才能访问
   static  $OJ_show_PrinterAndDiscussInContest=true;//是否在比赛页面显示Code Printer和Discuss的链接
   static  $OJ_show_contestSolutionInStatus=false;//是否在status.php中显示contest中提交的代码
+  static  $OJ_login2mycontest=false;//非管理员账号登录后是否跳转到我的比赛&作业，适合中小学
 
   //积分功能
   static $OJ_points_enable=false;//是否开启积分功能，true开启，false关闭

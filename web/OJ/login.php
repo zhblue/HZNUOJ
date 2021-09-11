@@ -31,8 +31,9 @@
     $user_id= stripslashes($user_id);
     $password= stripslashes($password);
   }
-
-  if (isset($_SESSION['gotoIndex'])){
+  if (isset($OJ_login2mycontest) && $OJ_login2mycontest && !IS_ADMIN($user_id)){
+    $go = "window.location.href='contest.php?my';";
+  } else if (isset($_SESSION['gotoIndex'])){
     $go = "window.location.href='index.php';";
     unset($_SESSION['gotoIndex']);
   } else  $go = "history.go(-2);\n";
