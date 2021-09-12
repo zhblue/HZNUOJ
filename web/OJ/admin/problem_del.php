@@ -53,13 +53,17 @@
           delImages($row->hint, $did);
         }
         // delete images end
-        $sql="delete FROM `problem` WHERE `problem_id`=$id";
+        $sql="DELETE FROM `source_code_user` WHERE `solution_id` IN (SELECT `solution_id` FROM `solution` WHERE `problem_id`=$id)";
+        $mysqli->query($sql);
+        $sql="DELETE FROM `source_code` WHERE `solution_id` IN (SELECT `solution_id` FROM `solution` WHERE `problem_id`=$id)";
+        $mysqli->query($sql);
+        $sql="DELETE FROM `solution` WHERE `problem_id`=$id";
+        $mysqli->query($sql);
+        $sql="DELETE FROM `problem_samples` WHERE `problem_id`=$id";
+        $mysqli->query($sql);
+        $sql="DELETE FROM `problem` WHERE `problem_id`=$id";
         $mysqli->query($sql) or die($mysqli->error);
-        $sql="UPDATE solution SET problem_id=NULL WHERE problem_id=$id";
-        $mysqli->query($sql);
-        $sql="DELETE FROM problem_samples WHERE problem_id=$id";
-        $mysqli->query($sql);
-        $sql="select max(problem_id) FROM `problem`" ;
+        $sql="SELECT max(problem_id) FROM `problem`" ;
         $result=$mysqli->query($sql);
         $row=$result->fetch_row();
         $max_id=$row[0];
