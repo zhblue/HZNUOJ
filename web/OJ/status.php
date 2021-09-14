@@ -133,7 +133,7 @@
 
   if ($language>count($language_ext) || $language<0) $language=-1;
   if ($language!=-1){
-    $sql=$sql."AND `language`='".strval($language)."' ";
+    $sql=$sql."AND `solution`.`language`='".strval($language)."' ";
   }
   // check the jresult_get arg
   if (isset($_GET['jresult'])) $jresult_get=intval($_GET['jresult']);
