@@ -124,6 +124,7 @@
           <li <?php
           if($page_name=="contest.php" && isset($_GET['my'])) {
               echo "class='am-active'";
+              $_SESSION['my'] = "?my";
           }
           ?>><a href="./contest.php?my"><?php echo $MSG_MY_CONTESTS ?></a></li>
         <?php } ?>
@@ -132,6 +133,7 @@
           <li <?php
           if($page_name=="contest.php" && !isset($_GET['my'])) {
             echo "class='am-active'";
+            $_SESSION['my'] = "";
           }
           ?>><a href="./contest.php"><?php echo $MSG_CONTEST ?></a></li>
           <!-- Contest部分 end -->

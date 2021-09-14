@@ -135,7 +135,7 @@ if(isset($_GET['cid'])){
     <div class="am-collapse am-topbar-collapse" id="collapse-head">
       <ul class="am-nav am-nav-pills am-topbar-nav">
       <?php if (!isset($_SESSION['contest_id'])) { ?>
-        <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="index.php"){echo "class='am-active'";} ?>><a class="am-icon-chevron-left" href="./contest.php"> <?php echo $BACK_TO_CONTEST ?></a></li>
+        <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="index.php"){echo "class='am-active'";} ?>><a class="am-icon-chevron-left" href="./contest.php<?php echo $_SESSION['my'] ?>"> <?php echo $BACK_TO_CONTEST ?></a></li>
       <?php } ?>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="contest.php" || basename($_SERVER['SCRIPT_NAME'])=="problem.php"){echo "class='am-active'";} ?>><a href='./contest.php?cid=<?php echo $cid?>'><?php echo $MSG_PROBLEM ?></a></li>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="status.php"){echo "class='am-active'";} ?>><a href='./status.php?cid=<?php echo $cid?>'><?php echo $MSG_STATUS ?></a></li>
