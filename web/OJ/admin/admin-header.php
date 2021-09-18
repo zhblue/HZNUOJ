@@ -202,6 +202,7 @@ sss;
             $html_li .= "<li><a href='$urlbaseDir/problem_export.php'>$MSG_EXPORT$MSG_PROBLEM</a></li>";
             $html_li .= "<li><a href='$urlbaseDir/problem_import.php'>$MSG_IMPORT$MSG_PROBLEM</a></li>";
             $html_li .= "<li><a href='$urlbaseDir/problem_changeid.php' title='Danger,Use it on your own risk'>$MSG_ReOrderProblem</a></li>";
+            $html_li .= "<li><a href='$urlbaseDir/solution_del.php'>$MSG_DEL$MSG_Solution</a></li>";
           }
           if($html_li!=""){
             echo<<<sss
