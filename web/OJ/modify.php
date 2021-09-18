@@ -106,13 +106,11 @@
   $nick=$mysqli->real_escape_string($nick);
   $school=$mysqli->real_escape_string($school);
   $email=$mysqli->real_escape_string($email);
-  $sql="UPDATE `users` SET"
-  ."`password`='".($password)."',"
-  ."`nick`='".($nick)."',"
-  ."`school`='".($school)."',"
-  ."`email`='".($email)."' "
-  ."WHERE `user_id`='".$mysqli->real_escape_string($user_id)."'"
-  ;
+  $sql="UPDATE `users` SET `password`='$password',";
+  if(isset($OJ_allow_modify_nick) && $OJ_allow_modify_nick || IS_ADMIN($_SESSION['user_id'])){
+    $sql.="`nick`='$nick',";
+  }
+  $sql.="`school`='$school',`email`='$email' WHERE `user_id`='".$mysqli->real_escape_string($user_id)."'";
   //echo $sql;
   //exit(0);
   $mysqli->query($sql);// or die("Insert Error!\n");

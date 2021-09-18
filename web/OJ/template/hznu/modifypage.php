@@ -26,7 +26,13 @@
     <div class="am-form-group">
       <label class="am-u-sm-2 am-u-sm-offset-2 am-form-label"><?php echo $MSG_NICK ?>:</label>
       <div class="am-u-sm-8">
+      <?php 
+      if(isset($OJ_allow_modify_nick) && $OJ_allow_modify_nick || IS_ADMIN($_SESSION['user_id'])){
+      ?>
         <input type="text" style="width:340px;" maxlength="20" placeholder="限20个以内的汉字、字母、数字或下划线" pattern="^[\u4e00-\u9fa5_a-zA-Z0-9]{1,20}$" value="<?php echo htmlentities($row->nick)?>" name="nick">
+      <?php } else { ?>
+        <label class="am-form-label"><?php echo htmlentities($row->nick)?></label>
+      <?php } ?>
       </div>
     </div> 
     <div class="am-form-group">
