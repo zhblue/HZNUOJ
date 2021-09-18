@@ -80,6 +80,10 @@ HTML;
   }
   else */
   if(isset($_GET['cid'])){
+    if($view_description){
+      echo "<h1>$MSG_Announcement</h1><hr/>";
+      echo "<div class='well' style='font-size: 1.3rem;'>$view_description</div>";
+    }
     echo "<ul class=\"am-nav am-nav-tabs\" style='margin-top: 30px;'>";
     //跳过不存在题目的题号
     $sql = "SELECT `num` FROM contest_problem a 

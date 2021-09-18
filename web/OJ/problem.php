@@ -100,8 +100,10 @@ else if (isset($_GET['cid']) && isset($_GET['pid'])) { // 如果是比赛中的�
     $cid=intval($_GET['cid']);
     $pid=intval($_GET['pid']);
     $is_practice = 0;
-    $sql="SELECT unix_timestamp(end_time) FROM contest WHERE contest_id=$cid";
-    $end_time=$mysqli->query($sql)->fetch_array()[0];
+    $sql="SELECT unix_timestamp(end_time),description FROM contest WHERE contest_id=$cid";
+    $result=$mysqli->query($sql)->fetch_array();
+    $end_time=$result[0];
+    $view_description=$result[1];
     $sql = "SELECT practice FROM contest WHERE contest_id=$cid";
     $is_practice = $mysqli->query($sql)->fetch_array()[0];
 
