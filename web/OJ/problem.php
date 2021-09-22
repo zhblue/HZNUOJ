@@ -220,8 +220,8 @@ ORDER BY `num`
     require("template/".$OJ_TEMPLATE."/error.php");
     exit(0);
 }else{
-    $row=$result->fetch_object();
-    $view_title= $row->title;
+    $problemrow=$result->fetch_object();
+    $view_title= $problemrow->title;
 }
 $result->free();
 
@@ -271,8 +271,8 @@ if(isset($_GET['cid']) && isset($_GET['pid'])) {
     $ac_num=$mysqli->query($sql)->fetch_array()[0];
 }
 else if(isset($_GET['id'])) {
-    $submit_num=$row->submit;
-    $ac_num=$row->accepted;
+    $submit_num=$problemrow->submit;
+    $ac_num=$problemrow->accepted;
 }
 
 /*cal submit statics END*/

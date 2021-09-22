@@ -105,7 +105,7 @@ HTML;
   ?>
   <h1 style="text-align:center;margin-top:40px;">
       <?php
-      echo $row->title;
+      echo $problemrow->title;
       ?>
     <!-- is contest problem -->
       <?php
@@ -159,9 +159,9 @@ HTML;
     
     
     <div style="text-align:center;">
-      <?php echo $MSG_Time_Limit ?>:&nbsp;&nbsp;<span class="am-badge am-badge-warning"><?php echo round($row->time_limit) ?> s</span>
-      &nbsp;&nbsp;&nbsp;&nbsp; <?php echo $MSG_Memory_Limit ?>: &nbsp;&nbsp;<span class="am-badge am-badge-warning"><?php echo $row->memory_limit?> MB</span></span>
-        <?php if($row->spj) echo "<span class='am-badge am-badge-primary'>Special Judge</span>"?>
+      <?php echo $MSG_Time_Limit ?>:&nbsp;&nbsp;<span class="am-badge am-badge-warning"><?php echo round($problemrow->time_limit) ?> s</span>
+      &nbsp;&nbsp;&nbsp;&nbsp; <?php echo $MSG_Memory_Limit ?>: &nbsp;&nbsp;<span class="am-badge am-badge-warning"><?php echo $problemrow->memory_limit?> MB</span></span>
+        <?php if($problemrow->spj) echo "<span class='am-badge am-badge-primary'>Special Judge</span>"?>
     </div>
     <div style="text-align:center;">
       <?php echo $MSG_SUBMISSION ?>：<span class="am-badge am-badge-secondary"><?php echo $submit_num?></span>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -169,12 +169,12 @@ HTML;
       <?php if(!isset($contest_score)):?>
         <?php
         $score_class = "am-badge-default";
-        if ($row->score >= 82) $score_class='am-badge-danger';
-        else if ($row->score >= 64) $score_class='am-badge-warning';
-        else if ($row->score >= 46) $score_class='am-badge-primary';
-        else if ($row->score >= 28) $score_class='am-badge-secondary';
+        if ($problemrow->score >= 82) $score_class='am-badge-danger';
+        else if ($problemrow->score >= 64) $score_class='am-badge-warning';
+        else if ($problemrow->score >= 46) $score_class='am-badge-primary';
+        else if ($problemrow->score >= 28) $score_class='am-badge-secondary';
         ?>
-        <?php echo $MSG_SCORE ?>：<span class='am-badge <?php echo $score_class ?>'><?php echo round($row->score) ?></span>
+        <?php echo $MSG_SCORE ?>：<span class='am-badge <?php echo $score_class ?>'><?php echo round($problemrow->score) ?></span>
       <?php else:?>
         <?php echo $MSG_SCORE ?>：<span class='am-badge am-badge-success'><?php echo round($contest_score) ?></span>
       <?php endif;?>
@@ -202,7 +202,7 @@ HTML;
         <?php
         if(!isset($_GET['cid']) || ($is_practice==1 && isset($OJ_AUTO_SHARE) && $OJ_AUTO_SHARE)) {
             echo<<<HTML
-            <a href="problemstatus.php?id={$row->problem_id}" style="color:white">
+            <a href="problemstatus.php?id={$problemrow->problem_id}" style="color:white">
               <button type="button" class="am-btn am-btn-sm am-btn-primary ">
                 $MSG_Codes
               </button>
@@ -211,12 +211,12 @@ HTML;
         }
         if (HAS_PRI("edit_".$set_name."_problem")) {
             echo<<<HTML
-          <a href="./admin/problem_edit.php?id=$row->problem_id&getkey={$_SESSION['getkey']}" style='color:white' $edit_target>
+          <a href="./admin/problem_edit.php?id=$problemrow->problem_id&getkey={$_SESSION['getkey']}" style='color:white' $edit_target>
             <button type='button' class='am-btn am-btn-sm am-btn-danger '>
               $MSG_EDIT
             </button>
           </a>
-          <a href="./admin/quixplorer/index.php?action=list&dir=$row->problem_id&order=name&srt=yes" style='color:white' target="_blank">
+          <a href="./admin/quixplorer/index.php?action=list&dir=$problemrow->problem_id&order=name&srt=yes" style='color:white' target="_blank">
             <button type='button' class='am-btn am-btn-sm am-btn-warning '>
               $MSG_TestData
             </button>
@@ -228,10 +228,10 @@ HTML;
     </div>
     <!-- 提交等按钮 end -->
       <?php
-      $str=sss($row->description);
+      $str=sss($problemrow->description);
       if($str) {
         //编码转义未解决！
-          //$tt=htmlspecialchars($row->description);
+          //$tt=htmlspecialchars($problemrow->description);
           echo <<<HTML
           <h2>$MSG_Description</h2>
           <p>
@@ -241,7 +241,7 @@ HTML;
       }
       ?>
       <?php
-      $str=sss($row->input);
+      $str=sss($problemrow->input);
       if($str) {
           echo <<<HTML
           <h2>$MSG_Input</h2>
@@ -253,7 +253,7 @@ HTML;
       ?>
     
       <?php
-      $str=sss($row->output);
+      $str=sss($problemrow->output);
       if($str) {
           echo <<<HTML
           <h2>$MSG_Output</h2>
@@ -304,7 +304,7 @@ HTML;
     
     
       <?php
-      $str=sss($row->hint);
+      $str=sss($problemrow->hint);
       if($str) {
           echo <<<HTML
           <h2>$MSG_HINT</h2>
@@ -316,12 +316,12 @@ HTML;
       ?>
     
       <?php
-      $str=sss($row->author);
+      $str=sss($problemrow->author);
       if($str) {
           echo <<<HTML
           <h2>$MSG_AUTHOR</h2>
             <div><p>
-              <a href='problemset.php?search=$row->author'>$str</a>
+              <a href='problemset.php?search={$problemrow->author}'>$str</a>
             </p></div>
 HTML;
       }
@@ -329,11 +329,11 @@ HTML;
   
       <?php
       if (!isset($_GET['cid'])) { // hide source if the problem is in contest
-          $str=sss($row->source);
-            $view_source = "<div pid='".$row->problem_id."' fd='source' class='center'>\n";
+          $str=sss($problemrow->source);
+            $view_source = "<div pid='".$problemrow->problem_id."' fd='source' class='center'>\n";
             $view_source .= show_category($str,"default");
             if(HAS_PRI("edit_".$set_name."_problem")) {
-              $view_source .="<span><span class='am-icon-plus' pid='$row->problem_id' style='cursor: pointer;' onclick='problem_add_source(this,\"$row->problem_id\");'></span></span>&nbsp;\n";
+              $view_source .="<span><span class='am-icon-plus' pid='$problemrow->problem_id' style='cursor: pointer;' onclick='problem_add_source(this,\"$problemrow->problem_id\");'></span></span>&nbsp;\n";
             }
             $view_source .= "</div>";
             if($str || HAS_PRI("edit_".$set_name."_problem")) {
@@ -378,7 +378,7 @@ HTML;
         <?php
         if(!isset($_GET['cid']) || ($is_practice==1 && isset($OJ_AUTO_SHARE) && $OJ_AUTO_SHARE)) {
             echo<<<HTML
-            <a href="problemstatus.php?id={$row->problem_id}" style="color:white">
+            <a href="problemstatus.php?id={$problemrow->problem_id}" style="color:white">
               <button type="button" class="am-btn am-btn-sm am-btn-primary ">
                 $MSG_Codes
               </button>
@@ -387,12 +387,12 @@ HTML;
         }
         if (HAS_PRI("edit_".$set_name."_problem")) {
             echo<<<HTML
-          <a href="./admin/problem_edit.php?id=$row->problem_id&getkey={$_SESSION['getkey']}" style='color:white' $edit_target>
+          <a href="./admin/problem_edit.php?id=$problemrow->problem_id&getkey={$_SESSION['getkey']}" style='color:white' $edit_target>
             <button type='button' class='am-btn am-btn-sm am-btn-danger '>
               $MSG_EDIT
             </button>
           </a>
-          <a href="./admin/quixplorer/index.php?action=list&dir=$row->problem_id&order=name&srt=yes" style='color:white' target="_blank">
+          <a href="./admin/quixplorer/index.php?action=list&dir=$problemrow->problem_id&order=name&srt=yes" style='color:white' target="_blank">
             <button type='button' class='am-btn am-btn-sm am-btn-warning '>
               $MSG_TestData
             </button>
