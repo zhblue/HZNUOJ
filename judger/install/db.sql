@@ -454,14 +454,14 @@ CREATE TABLE IF NOT EXISTS `users` (
   `like` int(9) DEFAULT '0',
   `dislike` int(9) DEFAULT '0',
   `tag` varchar(250) DEFAULT NULL,
-  `access_level` tinyint NOT NULL DEFAULT 0,
+  `access_level` tinyint NOT NULL DEFAULT '0',
   `points` decimal(10,2) DEFAULT '0.00',
   `activateCode` varchar(48) NOT NULL DEFAULT '',
-  `activateTimelimit` datetime DEFAULT NULL
+  `activateTimelimit` datetime DEFAULT NULL ,
   PRIMARY KEY (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-INSERT INTO `users` VALUES ('admin','','temp@temp.com',1,1,'N','::1','2019-03-12 16:34:09',1,NULL,1,'YQn1zuOVuWzSNcU5WwkMauvCGw00YzNl','2019-03-12 16:34:09','','admin','','其它','斗之气五段',100.00,'#b6b6b6',NULL,NULL,NULL,NULL,NULL,0,0,NULL,0);
+INSERT INTO `users` VALUES ('admin','','temp@temp.com',1,1,'N','::1','2019-03-12 16:34:09',1,NULL,1,'YQn1zuOVuWzSNcU5WwkMauvCGw00YzNl','2019-03-12 16:34:09','','admin','','其它','斗之气五段',100.00,'#b6b6b6',NULL,NULL,NULL,NULL,NULL,0,0,NULL,0,0.00,'',NULL);
 
 CREATE TABLE IF NOT EXISTS `users_cache` (
   `user_id` varchar(48) NOT NULL,
@@ -488,11 +488,11 @@ CREATE TABLE IF NOT EXISTS `users_cache_array` (
 CREATE TABLE IF NOT EXISTS `class_list` (
   `class_name` varchar(100) NOT NULL,
   `enrollment_year` smallint(4) NOT NULL,
-  `give_points` decimal(10,2) DEFAULT '0.00',
+  `give_points` decimal(10,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`class_name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-INSERT INTO `class_list` VALUES ('其它', '0');
+INSERT INTO `class_list`(`class_name`, `enrollment_year`) VALUES ('其它', '0');
 
 CREATE TABLE IF NOT EXISTS `reg_code` (
   `class_name` varchar(100) NOT NULL,
