@@ -46,6 +46,48 @@ function is_valid_user_name($user_name){
     return preg_match("/^[a-zA-Z0-9]+$/", $user_name);
 }
 
+function formatTimeLength($length)
+{
+  $hour = 0;
+  $minute = 0;
+  $second = 0;
+  $result = '';
+  global $OJ_LANG;
+
+  //加个语言判断，cn则显示中文时间，其他的都显示英文
+  if($OJ_LANG == "cn"){
+    $D = '天';
+    $H = '时';
+    $M = '分';
+    $S = '秒';
+  } else {
+    $D = ' Day';
+    $H = ' Hour';
+    $M = ' Minute';
+    $S = ' Second';
+  }
+  if($length >= 60){
+    $second = $length%60;
+    if($second > 0){ $result = $second.$S.($second>1 && $OJ_LANG != "cn"?"s":"");}
+    $length = floor($length/60);
+    if($length >= 60){
+      $minute = $length%60;
+      if($minute == 0){ if($result != ''){ $result = '0'. $M." ".$result;}}
+      else{ $result = $minute.$M.($length>1 && $OJ_LANG != "cn"?"s":"")." ".$result;}
+      $length = floor($length/60);
+      if($length >= 24){
+        $hour = $length%24;
+        if($hour == 0){ if($result != ''){ $result = '0'.$H." ".$result;}}
+        else{ $result = $hour . $H.($length>1 && $OJ_LANG != "cn"?"s":"")." " . $result;}
+        $length = floor($length / 24);
+        $result = $length . $D .($length>1 && $OJ_LANG != "cn"?"s":"")." " . $result;
+      } else{ $result = $length . $H .($length>1 && $OJ_LANG != "cn"?"s":"")." " . $result;}
+    } else{ $result = $length . $M .($length>1 && $OJ_LANG != "cn"?"s":"")." " . $result;}
+  } else{ $result = $length . $S .($length>1 && $OJ_LANG != "cn"?"s":"");}
+
+  return $result;
+}
+
 function sec2str($sec){
     return sprintf("%02d:%02d:%02d",$sec/3600,$sec%3600/60,$sec%60);
 }
@@ -328,7 +370,7 @@ function get_group($uid){
     global $mysqli;
     if($uid=="")$uid=$_SESSION['user_id'];
     $sql="SELECT a.rightstr, b.group_order FROM privilege a, privilege_groups b 
-	      WHERE a.rightstr = b.group_name and user_id='$uid' order by b.group_order";
+          WHERE a.rightstr = b.group_name and user_id='$uid' order by b.group_order";
     return ($mysqli->query($sql)->fetch_array()[0]);
 }
 function class_is_exist($class){
@@ -490,5 +532,32 @@ function updateRank($uid){ //调用前先require_once：rank.inc.php文件
     // 更新用户信息
     $sql="UPDATE users SET solved=".$AC.",submit=".$Submit.",level='".$level."',strength=".$strength.",color='".$color."' WHERE user_id='".$uid."'";
     $mysqli->query($sql);
+}
+
+/*
+查询IP在某个contest、机房的座位号
+$uid 用户名
+$contestid 哪个比赛/作业
+$room_id 哪个机房
+*/
+function getPCNameByUserID($uid, $contestid, $room_id){
+    global $mysqli;
+    $r=array();
+    // $sql = "SELECT i.`pcname` FROM `contest_online` as c , `ip_list` as i 
+    //         WHERE  c.`ip`=i.`ip` AND `contest_id`='$contestid' AND `user_id`='$uid' 
+    //         AND c.`ip` IN (SELECT `ip` from `ip_seat` WHERE `room_id`='$room_id') ORDER BY firsttime DESC";
+
+    $sql = "SELECT c.`ip`, i.`pcname` FROM `contest_online` AS c 
+            LEFT JOIN `ip_list` AS i ON c.`ip`=i.`ip` 
+            WHERE `contest_id`='$contestid' AND `user_id`='$uid' AND `room_id`='$room_id' ORDER BY firsttime DESC";
+    $result=$mysqli->query($sql);
+    while($row=$result->fetch_object()) {
+        if($row->ip!='0.0.0.0'){ //跳过0.0.0.0，这个是踢人标记
+            if($row->pcname!=NULL){
+                array_push($r, $row->pcname); //在册IP
+            } else array_push($r, "?");//没在册的IP
+        }
+    }
+    return implode(",", $r);
 }
 ?>

@@ -65,7 +65,7 @@
   static  $OJ_NEED_CLASSMODE=true;//是否开启班级模式，包括显示班级、学号、真名
   static  $OJ_NEED_LOGIN=false; //需要登录才能访问
   static  $OJ_show_PrinterAndDiscussInContest=true;//是否在比赛页面显示Code Printer和Discuss的链接
-  static  $OJ_show_contestSolutionInStatus=false;//是否在status.php中显示contest中提交的代码
+  static  $OJ_show_contestSolutionInStatus=false;//是否在状态页面status.php中显示竞赛&作业（contest）中提交的代码,默认关闭显示，中小学适合关闭，配合座位表功能防止学生登录其他账号抄袭
   static  $OJ_login2mycontest=false;//非管理员账号登录后是否跳转到我的比赛&作业，true开启，false关闭，默认关闭跳转，中小学适合开启
   static  $OJ_allow_modify_nick=true;//是否允许普通用户更改自己的昵称，true允许，false不允许，默认允许，中小学适合关闭修改
 

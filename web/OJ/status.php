@@ -95,7 +95,38 @@
     } else $sql=" WHERE (contest_id is null OR contest_id=0) ";//不在主状态页面中显示contest中提交的代码
   }
   
-  $order_str=" ORDER BY `solution_id` DESC ";
+  if (isset($_GET['sort_method']) && trim($_GET['sort_method'])!="" ) $args['sort_method'] = trim($_GET['sort_method']);
+  else $args['sort_method'] = "";
+  switch ($args['sort_method']){
+    case "subseat_DESC":
+      $order_str = " ORDER BY `pcname` DESC, `solution_id` DESC ";
+      $subtime = "subtime_DESC";
+      $subtime_icon = "am-icon-sort";
+      $subseat = "subseat_ASC";
+      $subseat_icon = "am-icon-sort-amount-desc";
+      break;
+    case "subseat_ASC":
+      $order_str = " ORDER BY `pcname`, `solution_id` DESC ";
+      $subtime = "subtime_DESC";
+      $subtime_icon = "am-icon-sort";
+      $subseat = "subseat_DESC";
+      $subseat_icon = "am-icon-sort-amount-asc";
+      break;
+    case "subtime_ASC":
+      $order_str = " ORDER BY `solution_id` ";
+      $subtime = "subtime_DESC";
+      $subtime_icon = "am-icon-sort-amount-asc";
+      $subseat = "subseat_ASC";
+      $subseat_icon = "am-icon-sort";
+      break;
+    case "subtime_DESC": default:
+      $order_str = " ORDER BY `solution_id` DESC ";
+      $subtime = "subtime_ASC";
+      $subtime_icon = "am-icon-sort-amount-desc";
+      $subseat = "subseat_ASC";
+      $subseat_icon = "am-icon-sort";
+  }
+
   //check the cid arg end
   // check the top arg
   if (isset($_GET['top'])){
@@ -124,7 +155,7 @@
   if (isset($_GET['user_id'])){
           $user_id=trim($_GET['user_id']);
           if (is_valid_user_name($user_id) && $user_id!=""){
-                  $sql=$sql."AND `user_id`='".$user_id."' ";
+                  $sql=$sql."AND `solution`.`user_id`='".$user_id."' ";
           }else $user_id="";
   }
   // check the language arg
@@ -156,13 +187,18 @@
 
   if($OJ_SIM){
     //$old=$sql;
-    $sql="SELECT * from solution solution left join `sim` sim on solution.solution_id=sim.s_id ".$sql;
+    $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname`, sim.* FROM `solution` 
+          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
+          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` 
+          LEFT JOIN `sim` sim ON `solution`.`solution_id`=sim.s_id ".$sql;
     if(isset($_GET['showsim'])&&intval($_GET['showsim'])>0){
           $showsim=intval($_GET['showsim']);
-          $sql.=" and sim.sim>=$showsim";
+          $sql.=" AND `sim`.`sim`>=$showsim";
     }
   }else{
-	  $sql="select * from `solution` ".$sql;
+	  $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname` FROM `solution` 
+          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
+          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` ".$sql;
   }
 
   //if is rankist query, show all submissions
@@ -197,11 +233,15 @@
     $cnt=1-$cnt;
   
     $view_status[$i][0]=$row['solution_id'];
-       
-    if ($row['contest_id']>0 && !isset($cid)) {
-       $view_status[$i][1]= "<a target='_blank' href='contestrank.php?cid=".$row['contest_id']."&user_id=".$row['user_id']."#".$row['user_id']."'>".$row['user_id']."</a>";
+    if (mb_strlen($row['nick'], 'utf-8')==0){
+      $nick = $row['user_id'];
     } else {
-      $view_status[$i][1]= "<a target='_blank' href='userinfo.php?user=".$row['user_id']."'>".$row['user_id']."</a>";
+      $nick = mb_strlen($row['nick'], 'utf-8')<=3 ? $row['user_id']."(".$row['nick'].")" : "<div title='{$row['nick']}'>".$row['user_id']."(". mb_substr($row['nick'],0,2,'utf-8')."...)</div>";
+    }
+    if ($row['contest_id']>0 && !isset($cid)) {
+      $view_status[$i][1]= "<a target='_blank' href='contestrank.php?cid=".$row['contest_id']."#".$row['user_id']."'>".$nick."</a>";
+    } else {
+      $view_status[$i][1]= "<a target='_blank' href='userinfo.php?user=".$row['user_id']."'>".$nick."</a>";
     }
 
     if ($row['contest_id']>0) {
@@ -322,9 +362,13 @@
       $view_status[$i][7]="----";
     }
     $view_status[$i][8]= $row['in_date'];
-    $view_status[$i][9]= $row['judger'];
+    if (mb_strlen($row['pcname'], 'utf-8')>0){
+      $pcname = "【".$row['pcname']."】";
+    } else $pcname = "";
+    $view_status[$i][9] = ($pcname!="") ? $pcname : substr_replace($row['ip'],"**",0,strpos($row['ip'],"."));
+    //$view_status[$i][10]= $row['judger'];
   }
-  if(!$OJ_MEMCACHE) $result->free();
+  if(!$OJ_MEMCACHE && $result->num_rows>0 ) $result->free();
 
   
 ?>
@@ -346,21 +390,18 @@
         <th><?php echo $MSG_LANG ?></th>
         <th><?php echo $MSG_CODE_LENGTH ?></th>
         <th><?php echo $MSG_SUBMIT_TIME ?></th>
+        <th><?php echo $MSG_Seat ?>/IP</th>
       </tr>
     </thead>
     <tbody>
       <?php
       foreach($view_status as $row){
         echo "<tr>";
-        echo "<td style='text-align:left'>".$row[0]."</td>";
-        echo "<td style='text-align:left'>".$row[1]."</td>";
-        echo "<td style='text-align:left'>".$row[2]."</td>";
-        echo "<td style='text-align:left'>".$row[3]."</td>";
-        echo "<td style='text-align:left'>".$row[4]."</td>";
-        echo "<td style='text-align:left'>".$row[5]."</td>";
-        echo "<td style='text-align:left'>".$row[6]."</td>";
-        echo "<td style='text-align:left'>".$row[7]."</td>";
-        echo "<td style='text-align:left'>".$row[8]."</td>";
+        foreach($row as $table_cell){
+          echo "<td>";
+          echo $table_cell;
+          echo "</td>";
+        }
         echo "</tr>";
       }
       ?>

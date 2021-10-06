@@ -171,8 +171,8 @@ function generate_url($data){
         <th><?php echo $MSG_TIME ?></th>
         <th><?php echo $MSG_LANG ?></th>
         <th><?php echo $MSG_CODE_LENGTH ?></th>
-        <th><?php echo $MSG_SUBMIT_TIME ?></th>
-        <th><?php echo $MSG_JUDGER ?></th>
+        <th id="subtime"><?php echo $MSG_SUBMIT_TIME ?>&nbsp;<span class="<?php echo $subtime_icon ?>"></span></th>
+        <th id="subseat"><?php echo $MSG_Seat ?>/IP&nbsp;<span class="<?php echo $subseat_icon ?>"></span></th>
       </tr>
     </thead>
     <tbody>
@@ -228,3 +228,17 @@ var judge_result = [<?php echo "'". implode("','", $judge_result) ."'";?>];
 var judge_color = [<?php echo "'". implode("','", $judge_color) ."'";?>];
 </script>
 <script src="template/<?php echo $OJ_TEMPLATE?>/auto_refresh.js?v=0.38"></script>
+<!-- sort by submit time,seat BEGIN -->
+<script>
+    <?php $args['sort_method'] = $subtime; ?>
+    $("#subtime").click(function() {
+        var link = "<?php echo generate_url(array("page" => "1")) ?>";
+        window.location.href = link;
+    });
+    <?php $args['sort_method'] = $subseat; ?>
+    $("#subseat").click(function() {
+        var link = "<?php echo generate_url(array("page" => "1")) ?>";
+        window.location.href = link;
+    });
+</script>
+<!-- sort by submit time,seat END -->

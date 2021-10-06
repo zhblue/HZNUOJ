@@ -42,8 +42,11 @@ else $_SESSION['tag'] = "N";
 
 if(isset($_GET['cid'])){
   $warnning_percent=90;
-  $cid =  $mysqli->real_escape_string($_GET['cid']);
-  $sql="SELECT UNIX_TIMESTAMP(start_time) AS start_time, UNIX_TIMESTAMP(end_time) AS end_time,`unlock`,lock_time,title FROM contest WHERE contest_id='$cid'";
+  $cid = $mysqli->real_escape_string($_GET['cid']);
+  $sql="SELECT UNIX_TIMESTAMP(start_time) AS start_time, UNIX_TIMESTAMP(end_time) AS end_time,`unlock`,lock_time,title,user_limit
+        ,c.room_id,`private`,`defunct`,i.`seat_forbid_multiUser_login`,i.`user_forbid_multiIP_login` FROM contest c
+        LEFT JOIN ip_classroom i ON c.room_id=i.room_id 
+        WHERE contest_id='$cid'";
   $res=$mysqli->query($sql);
   $contest_time=$res->fetch_array();
   $contest_len=$contest_time[1]-$contest_time[0];
@@ -73,6 +76,15 @@ if(isset($_GET['cid'])){
           break;
   }
   $contest_title=$contest_time['title'];
+  $room_id=$contest_time['room_id'];
+  if($contest_time['seat_forbid_multiUser_login']==NUll){
+    $seat_forbid_multiUser_login = 1;
+  } else $seat_forbid_multiUser_login = $contest_time['seat_forbid_multiUser_login']; //是否禁止一个IP(座位上)登入多个不同用户
+  if($contest_time['user_forbid_multiIP_login']==NUll){
+    $user_forbid_multiIP_login = 1;
+  } else $user_forbid_multiIP_login = $contest_time['user_forbid_multiIP_login']; //是否禁止同一个用户登录到不同的IP(座位)
+  if(!isset($_SESSION['mode']) && (!$seat_forbid_multiUser_login || !$user_forbid_multiIP_login)) $_SESSION['mode']="list";
+  $user_limit = $contest_time['user_limit']=="Y"?1:0;
   $title.="<".$contest_title.">";
 }
 ?>
@@ -141,6 +153,9 @@ if(isset($_GET['cid'])){
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="status.php"){echo "class='am-active'";} ?>><a href='./status.php?cid=<?php echo $cid?>'><?php echo $MSG_STATUS ?></a></li>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="contestrank.php"){echo "class='am-active'";} ?>><a href='./contestrank.php?cid=<?php echo $cid?>'><?php echo $MSG_RANKLIST ?></a></li>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="contestrank-oi.php"){echo "class='am-active'";} ?>><a href='./contestrank-oi.php?cid=<?php echo $cid?>'>OI <?php echo $MSG_RANKLIST ?></a></li>
+      <?php if (HAS_PRI('enter_admin_page') && $room_id>0) { ?>
+        <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="seat_map.php"){echo "class='am-active'";} ?>><a href='./seat_map.php?cid=<?php echo $cid?>'><?php echo $MSG_SeatMap?></a></li>
+      <?php } ?>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="conteststatistics.php"){echo "class='am-active'";} ?>><a href='./conteststatistics.php?cid=<?php echo $cid?>'><?php echo $MSG_STATISTICS ?></a></li>
         <?php if(isset($OJ_show_PrinterAndDiscussInContest)&&$OJ_show_PrinterAndDiscussInContest){?>
         <li <?php if(basename($_SERVER['SCRIPT_NAME'])=="contest_code_printer.php"){echo "class='am-active'";} ?>><a href='./contest_code_printer.php?cid=<?php echo $cid?>'>Printer</a></li>     
@@ -272,5 +287,105 @@ BOT;
         </div>
 HTML;
     }
+
+  /*记录用户的contest活动记录 start*/
+  if (isset($_GET['cid']) && $user_id2!="" && is_running($cid) && $room_id > 0) {
+    $old_ip = "";
+    $new_ip = $_SERVER['REMOTE_ADDR'];
+    $record_OK=true;
+    if ($contest_time['private'] && !isset($_SESSION['c'.$cid])) $record_OK=false;
+    if ($contest_time['defunct']=='Y') $record_OK=false;
+    if (HAS_PRI("edit_contest")) $record_OK=false;
+    if ($record_OK){
+      $sql = "SELECT COUNT(*) FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id' AND `user_id`='$user_id2' AND `ip`='0.0.0.0'";
+      if($mysqli->query($sql)->fetch_array()[0]>0){//删除该账号所有ip的在线记录并注销本次登录
+        $sql = "DELETE FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id' AND `user_id`='$user_id2'";
+        $mysqli->query($sql);
+        unset($_SESSION['user_id']);
+        session_destroy();
+        header("Location:loginpage.php");
+        exit(0);
+      }
+      $sql = "SELECT * FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id' AND `user_id`='$user_id2' ORDER BY `firsttime` LIMIT 1";
+      $online = $mysqli->query($sql);
+      if($row = $online->fetch_object()){//这个账户在这个contest、room_id已有登录记录
+        $old_ip = $row->ip;
+        if($new_ip <> $old_ip && !$row->allow_change_seat && $user_forbid_multiIP_login){//一个普通用户只能登录到一个座位上(第一次登录即锁定IP)，其他座位非法登入都注销掉
+          //echo "###########################111111111<br>";
+          unset($_SESSION['user_id']);
+          session_destroy();
+          $view_errors= "<a href='./loginpage.php' >$user_id2 乖徒儿，你还在编号【".getPCNameByUserID($user_id2, $cid, $room_id)."】的洞府修炼，不要乱跑！<br>若要更换洞府记得给为师飞鸽传书哦，点击此处重新登录</a>\n";
+          require("template/".$OJ_TEMPLATE."/error.php");
+          exit(0);
+        }
+      }
+      $sql = "SELECT * FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id' AND `ip`='$new_ip' ORDER BY `firsttime` LIMIT 1";
+      $result1 = $mysqli->query($sql);
+      if($old_ip == $new_ip){//前后在同一个座位上
+        $row = $result1->fetch_object();
+        if($row->user_id!=$user_id2 && $seat_forbid_multiUser_login){//这个new_ip（座位）目前在这个contest、room_id已有账户登录
+          //echo "###########################10101010<br>";
+          unset($_SESSION['user_id']);
+          session_destroy();
+          $view_errors= "<a href='./loginpage.php'>呔！【".getPCNameByUserID($row->user_id, $cid, $room_id)."】乃我乖徒儿{$row->user_id}的修炼洞府，何方妖孽在此窥探！<br>年轻人要讲武德，还不速速退去，点击此处出门右拐重新登录！</a>\n";
+          require("template/".$OJ_TEMPLATE."/error.php");
+          exit(0);
+        }
+        $sql="UPDATE `contest_online` SET `lastmove`=NOW(),`allow_change_seat`=0 WHERE `contest_id`='$cid' AND `user_id`='$user_id2' AND `ip`='$new_ip' AND `room_id`='$room_id'";
+        //echo "###########################22222222222222<br>";
+        $mysqli->query($sql) or die("Error! ".$mysqli->error);
+      } else {//前后不在同一个座位上，或者是第一次登录
+        if($row = $result1->fetch_object()){//这个new_ip（座位）目前在这个contest、room_id已有账户登录
+          if($online->num_rows==0){ //new_ip上后登录的这个账户在这个contest、room_id没有登录记录,本次第一次登录
+            if(!$seat_forbid_multiUser_login ){//如果允许同一个IP（座位）登入不同的普通用户（学生）
+              $sql="INSERT INTO `contest_online`(`contest_id`,`user_id`,`ip`,`room_id`,`firsttime`,`lastmove`) VALUES('$cid','$user_id2','$new_ip','$room_id',NOW(),NOW())";
+              //echo "###########################3333333333333<br>";
+              $mysqli->query($sql) or die("Error! ".$mysqli->error);
+            } else {
+              //echo "###########################4444444444444<br>";
+              unset($_SESSION['user_id']);
+              session_destroy();
+              $view_errors= "<a href='./loginpage.php'>呔！【".getPCNameByUserID($row->user_id, $cid, $room_id)."】乃我乖徒儿{$row->user_id}的修炼洞府，何方妖孽在此窥探！<br>年轻人要讲武德，还不速速退去，点击此处出门右拐重新登录！</a>\n";
+              require("template/".$OJ_TEMPLATE."/error.php");
+              exit(0);
+            }
+          } else {//new_ip上后登录的这个账户在这个contest、room_id已有登录记录
+            if($row->user_id==$user_id2){
+              //echo "###########################5555555555<br>";
+              $sql="DELETE FROM `contest_online` WHERE `contest_id`='$cid' AND `user_id`='$user_id2' AND `ip`='$old_ip' AND `room_id`='$room_id'";
+              $mysqli->query($sql) or die("Error! ".$mysqli->error);
+              $sql="UPDATE `contest_online` SET `lastmove`=NOW(),`allow_change_seat`=0 WHERE `contest_id`='$cid' AND `user_id`='$user_id2' AND `ip`='$new_ip' AND `room_id`='$room_id'";
+              $mysqli->query($sql) or die("Error! ".$mysqli->error);
+            } else {
+              if(!$seat_forbid_multiUser_login){//如果允许同一个IP（座位）登入不同的普通用户（学生）
+                $sql="UPDATE `contest_online` SET `ip`='$new_ip',`lastmove`=NOW(),`allow_change_seat`=0 WHERE `contest_id`='$cid' AND `user_id`='$user_id2' AND `ip`='$old_ip' AND `room_id`='$room_id'";
+                //echo "###########################6666666666<br>";
+                $mysqli->query($sql) or die("Error! ".$mysqli->error);
+              } else {
+                //echo "###########################7777777777<br>";
+                unset($_SESSION['user_id']);
+                session_destroy();
+                $view_errors= "<a href='./loginpage.php'>呔！【".getPCNameByUserID($row->user_id, $cid, $room_id)."】乃我乖徒儿{$row->user_id}的修炼洞府，何方妖孽在此窥探！<br>年轻人要讲武德，还不速速退去，点击此处出门右拐重新登录！</a>\n";
+                require("template/".$OJ_TEMPLATE."/error.php");
+                exit(0);
+              }
+            }
+          }
+        } else {//这个IP（座位）目前在这个contest、room_id没有账户登录
+          if($online->num_rows==0){ //这个账户在这个contest、room_id没有登录记录,本次第一次登录
+            $sql="INSERT INTO `contest_online`(`contest_id`,`user_id`,`ip`,`room_id`,`firsttime`,`lastmove`) VALUES('$cid','$user_id2','$new_ip','$room_id',NOW(),NOW())";
+            //echo "###########################888888888<br>";
+            $mysqli->query($sql) or die("Error! ".$mysqli->error);
+          } else { //场景：学生换位置到空座位
+            $sql="UPDATE `contest_online` SET `ip`='$new_ip',`lastmove`=NOW(),`allow_change_seat`=0 WHERE `contest_id`='$cid' AND `user_id`='$user_id2' AND `ip`='$old_ip' AND `room_id`='$room_id'";
+            //echo "###########################999999999<br>";
+            $mysqli->query($sql) or die("Error! ".$mysqli->error);
+          }
+        }
+      }
+    }
+  }
+  /*记录用户的contest活动记录 end*/
+
     ?>
 </div>

@@ -111,7 +111,7 @@ while($uid=$res->fetch_array()[0]){
 }
 
 
-$sql="SELECT `start_time`,`title`,`end_time`,user_limit,lock_time,`unlock`,first_prize,second_prize,third_prize FROM `contest` WHERE `contest_id`='$cid'";
+$sql="SELECT `start_time`,`title`,`end_time`,user_limit,lock_time,`unlock`,first_prize,second_prize,third_prize,room_id FROM `contest` WHERE `contest_id`='$cid'";
 //$result=$mysqli->query($sql) or die($mysqli->error);
 //$rows_cnt=$result->num_rows;
 if($OJ_MEMCACHE){
@@ -160,7 +160,7 @@ switch($unlock){
 $first_prize=$row['first_prize'];
 $second_prize=$row['second_prize'];
 $third_prize=$row['third_prize'];
-
+$room_id=$row['room_id'];
 
 
 //跳过不存在题目的题号
@@ -216,7 +216,7 @@ switch($cls){
         break;
     case "null":
         if (!$user_limit) $sql_filter = " WHERE users.class='null' or users.class is null or users.class='其它'";
-        else$sql_filter = " team.class='null' or team.class is null or team.class='其它'";
+        else $sql_filter = " team.class='null' or team.class is null or team.class='其它'";
         break;
     default:
         if (!$user_limit) $sql_filter = " WHERE users.class='$cls' ";
@@ -264,7 +264,11 @@ for ($i=0; $i<$rows_cnt; $i++){
     if (strcmp($user_name,$n_user)){
         $U[$user_cnt]=new TM();
         $U[$user_cnt]->user_id=$row['user_id'];
-        $U[$user_cnt]->nick=$row['nick'];
+        if($room_id>0 && $row['real_name']!="") $U[$user_cnt]->nick=$row['real_name']; else $U[$user_cnt]->nick=$row['nick'];//座位表模式下昵称显示为真名，方便教师监督
+        if(!$is_excluded[$row['user_id']]){ //不参加排名的就不显示座位号了
+            $tmp = getPCNameByUserID($row['user_id'], $cid, $room_id);
+            if($tmp != "") $U[$user_cnt]->nick = "【".$tmp."】".$U[$user_cnt]->nick;
+        }
         $U[$user_cnt]->real_name = $row['real_name'];
         $U[$user_cnt]->stu_id = $row['stu_id'];
         $U[$user_cnt]->class = $row['class'];
@@ -289,21 +293,25 @@ if (!$user_limit){
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
-    array_unique($haveNotStart_ulist);
+    $haveNotStart_ulist=array_unique($haveNotStart_ulist);
     $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `users` WHERE `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
 } else {
     $sql="SELECT `user_id` FROM `team` WHERE `contest_id`='$cid' order by `user_id`";
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
-    array_unique($haveNotStart_ulist);
+    $haveNotStart_ulist=array_unique($haveNotStart_ulist);
     $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `team` WHERE `contest_id`='$cid' AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
 }
 $res=$mysqli->query($sql) or die($mysqli->error);
 while($row=$res->fetch_object()) {
     $U[$user_cnt]=new TM();
     $U[$user_cnt]->user_id=$row->user_id;
-    $U[$user_cnt]->nick=$row->nick;
+    if($room_id>0 && $row->real_name!="") $U[$user_cnt]->nick=$row->real_name; else $U[$user_cnt]->nick=$row->nick;//座位表模式下昵称显示为真名，方便教师监督
+    if(!$is_excluded[$row->user_id]){ //不参加排名的就不显示座位号了
+        $tmp = getPCNameByUserID($row->user_id, $cid, $room_id);
+        if($tmp != "") $U[$user_cnt]->nick = "【".$tmp."】".$U[$user_cnt]->nick;
+    }
     $U[$user_cnt]->real_name = $row->real_name;
     $U[$user_cnt]->stu_id = $row->stu_id;
     $U[$user_cnt]->class = $row->class;

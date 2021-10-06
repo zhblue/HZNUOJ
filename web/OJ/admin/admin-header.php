@@ -203,6 +203,8 @@ sss;
             $html_li .= "<li><a href='$urlbaseDir/problem_import.php'>$MSG_IMPORT$MSG_PROBLEM</a></li>";
             $html_li .= "<li><a href='$urlbaseDir/problem_changeid.php' title='Danger,Use it on your own risk'>$MSG_ReOrderProblem</a></li>";
             $html_li .= "<li><a href='$urlbaseDir/solution_del.php'>$MSG_DEL$MSG_Solution</a></li>";
+            $html_li .= "<li><a href='$urlbaseDir/classroom_iplist.php'>{$MSG_classroom}IP{$MSG_LIST}</a></li>";
+            $html_li .= "<li><a href='$urlbaseDir/classroom_manage.php'>$MSG_roomManage</a></li>";
           }
           if($html_li!=""){
             echo<<<sss

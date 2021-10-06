@@ -35,7 +35,7 @@
   $MSG_LOST_PASSWORD="忘记密码";
   $MSG_Securekey="安全口令";
   $MSG_LOSTPASSWORD_HELP1="请填写您的用户名和注册时登记的电子邮箱进行身份验证。";
-  $MSG_LOSTPASSWORD_HELP2="请将发到您邮箱中的".$MSG_Securekey."填写到相应位置；如果填写正确通过下一步验证，这个验证码就自动成为您的新密码！";
+  $MSG_LOSTPASSWORD_HELP2="请将发到您邮箱中的".$MSG_Securekey."填写到相应位置(可能在垃圾邮件中)；如果填写正确通过下一步验证，这个验证码就自动成为您的新密码！";
   $MSG_RESETPASSWORD_SUCC="已将输入的".$MSG_Securekey."设置为您的新密码。 点击<a href='loginpage.php'>这里</a>登录！";
   $MSG_RESETPASSWORD_FAIL="密码重置失败！";
   $MSG_points="积分";
@@ -140,6 +140,17 @@
   $MSG_Top = "固顶";
   $MSG_AccessLevel = "访问等级";
   $MSG_Undo = "撤销";
+  $MSG_classroom = "机房";
+  $MSG_roomManage = $MSG_classroom."管理";
+  $MSG_ComputerName = "计算机名";
+  $MSG_Rows = "行数";
+  $MSG_Cols = "列数";
+  $MSG_SeatMap = "座位表";
+  $MSG_seat_forbid_multiUser_login = "禁止多用户登入";
+  $MSG_user_forbid_multiIP_login = "禁止多IP登入";
+  $MSG_Login_Option = "登录选项";
+  $MSG_Activity ="活动";
+  $MSG_Idle = "闲置";
   
   /*
   下面的代码请不要乱动，以免出问题！！！
@@ -337,7 +348,7 @@
   $MSG_HELP_MORE_TESTDATA_LATER="更多组测试数据，请在题目添加完成后补充。"; 
   //$MSG_HELP_SPJ="特殊裁判的使用，请参考<a href='https://cn.bing.com/search?q=hustoj+special+judge' target='_blank'>搜索hustoj special judge</a>"; 
   
-  //$MSG_WARNING_LOGIN_FROM_DIFF_IP="从不同的ip地址登录";
+  //$MSG_WARNING_LOGIN_FROM_DIFF_IP="从不同的IP地址登录";
   //$MSG_LOSTPASSWORD_MAILBOX="请到您邮箱的垃圾邮件文件夹寻找验证码，并填写到这里";
   //$MSG_LOSTPASSWORD_WILLBENEW="如果填写正确，通过下一步验证，这个验证码就自动成为您的新密码！";
   

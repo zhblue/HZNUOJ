@@ -140,7 +140,18 @@
   $MSG_Top = "TOP";
   $MSG_AccessLevel = "Access Level";
   $MSG_Undo = "Undo";
-  
+  $MSG_classroom = "Classroom";
+  $MSG_roomManage = $MSG_classroom." Manage";
+  $MSG_ComputerName = "Computer Name";
+  $MSG_Rows = "Rows";
+  $MSG_Cols = "Columns";
+  $MSG_SeatMap = "Seat Map";
+  $MSG_seat_forbid_multiUser_login = "forbid multi-users login";
+  $MSG_user_forbid_multiIP_login = "forbid multi-IP login";
+  $MSG_Login_Option = "Login Option";
+  $MSG_Activity ="Activity";
+  $MSG_Idle = "Idle";
+
   /*
   下面的代码请不要乱动，以免出问题！！！
   */
@@ -213,7 +224,7 @@
   $MSG_HINT= "Hint" ;
   $MSG_Source= "Source/Category" ;
   $MSG_Limit = "Limit";
-  $MSG_Times = "Time";
+  $MSG_Times = " Time";
   $MSG_Time_Limit="Time Limit";
   $MSG_Memory_Limit="Memory Limit";
   $MSG_TestData = "Test Data";
@@ -245,8 +256,8 @@
   $MSG_Distribution = "Privilege Distribution";
   $MSG_SourceCode= "Source" ;
   $MSG_GIVESOURCE="Give Source";
-  $MSG_IMPORT=" Import";
-  $MSG_EXPORT=" Export";
+  $MSG_IMPORT=" Import ";
+  $MSG_EXPORT=" Export ";
   $MSG_ReOrderProblem="ReOrderProblem";
   $MSG_UPDATE_DATABASE="Update Database";
   $MSG_ONLINE="Online";  

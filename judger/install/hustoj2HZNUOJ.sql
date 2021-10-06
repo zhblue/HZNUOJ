@@ -72,10 +72,11 @@ CREATE TABLE `hit_log` (
   `ip` varchar(46) DEFAULT NULL,
   `path` text,
   `time` datetime DEFAULT NULL,
-  `user_id` text,
+  `user_id` varchar(48),
   PRIMARY KEY (`index`),
   KEY `time` (`time`),
-  KEY `ip` (`ip`)
+  KEY `ip` (`ip`),
+  KEY `user_id` (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `printer_code` (
@@ -222,6 +223,7 @@ ALTER TABLE `contest` ADD COLUMN `second_prize` int(11) DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `third_prize` int(11) DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `practice` tinyint(4) DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `isTop` tinyint(1) NOT NULL DEFAULT '0';
+ALTER TABLE `contest` ADD COLUMN `room_id` INT(11) NOT NULL DEFAULT '0' AFTER `isTop`;
 ALTER TABLE `contest` ADD INDEX `contest_id` (`contest_id`,`defunct`,`private`,`defunct_TA`,`open_source`) USING BTREE;
 ALTER TABLE `contest` ADD INDEX `running_contest` (`start_time`,`end_time`,`practice`);
 UPDATE `contest` SET `first_prize`=1,`second_prize`=3,`third_prize`=5;
@@ -495,4 +497,43 @@ CREATE TABLE `log_chart` (
   `solution_ac` INT(11) NOT NULL DEFAULT '0',
   `hit_log` INT(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`log_date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_classroom` (
+  `room_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `classroom` VARCHAR(100) NOT NULL ,
+  `rows` INT(11) NOT NULL DEFAULT '0' ,
+  `columns` INT(11) NOT NULL DEFAULT '0' ,
+  `seat_forbid_multiUser_login` tinyint(1) NOT NULL DEFAULT '1' ,
+  `user_forbid_multiIP_login` tinyint(1) NOT NULL DEFAULT '1' ,
+  PRIMARY KEY (`classroom`) ,
+  KEY (`room_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_seat` (
+  `seat_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `ip` varchar(46) NOT NULL DEFAULT '',
+  `room_id` INT(11) NOT NULL ,
+  PRIMARY KEY (`seat_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_list` (
+  `ip_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `pcname` varchar(100) NOT NULL ,
+  `ip` varchar(46) NOT NULL ,
+  PRIMARY KEY (`ip`) ,
+  KEY (`ip_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `contest_online` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `contest_id` INT(11) NOT NULL ,
+  `user_id` varchar(48) NOT NULL ,
+  `ip` varchar(46) NOT NULL ,
+  `room_id` INT(11) NOT NULL DEFAULT '0' ,
+  `firsttime` datetime NOT NULL ,
+  `lastmove` datetime NOT NULL ,
+  `allow_change_seat` tinyint(1) NOT NULL DEFAULT '0' ,
+  PRIMARY KEY ( `contest_id`, `user_id`, `ip`, `room_id`) ,
+  KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

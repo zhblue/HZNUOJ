@@ -28,7 +28,7 @@ if (isset($_POST['startdate'])) { // 如果有POST过来的信息，则获取POS
     $description = str_replace("<!---->","",$description);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
     $private=$mysqli->real_escape_string($_POST['private']);
     $user_limit = $mysqli->real_escape_string($_POST['user_limit']);
-    $defunct_TA = $mysqli->real_escape_string($_POST['defunct_TA']);
+    $room_id = $mysqli->real_escape_string($_POST['room_id']);
     $open_source = $mysqli->real_escape_string($_POST['open_source']);
     $practice = $mysqli->real_escape_string($_POST['practice']);
     $unlock = intval($mysqli->real_escape_string($_POST['unlock']));
@@ -62,7 +62,7 @@ if (isset($_POST['startdate'])) { // 如果有POST过来的信息，则获取POS
     $cid=intval($_POST['cid']);
     $sql = "UPDATE `contest` 
             SET `title`='$title',description='$description',`start_time`='$starttime',`end_time`='$endtime',
-                `private`='$private', user_limit='$user_limit', defunct_TA='$defunct_TA', open_source='$open_source',
+                `private`='$private', user_limit='$user_limit', room_id='$room_id', open_source='$open_source',
                 `practice` = $practice, `langmask`=$langmask ,`password`='$password',`unlock`='$unlock',`lock_time`='$lock_time',
                 `first_prize`='$first_prize',`second_prize`='$second_prize',`third_prize`='$third_prize' 
             WHERE `contest_id`=$cid";
@@ -147,7 +147,7 @@ $starttime=$row['start_time'];
 $endtime=$row['end_time'];
 $private=$row['private'];
 $user_limit = $row['user_limit']=="Y"?'Y':'N';
-$defunct_TA = $row['defunct_TA']=="Y"?'Y':'N';
+$room_id = $row['room_id'];
 $open_souce = $row['open_source']=="Y"?'Y':'N';
 $practice = $row['practice'];
 $password=$row['password'];
@@ -228,10 +228,18 @@ for ($i=$result->num_rows;$i>0;$i--){
     <option value='Y' <?php echo $user_limit=='Y'?'selected=selected':''?>>Yes</option>
     <option value='N' <?php echo $user_limit=='N'?'selected=selected':''?>>No</option>
   </select>&nbsp;&nbsp;
-  <strong>Defunct TA&nbsp;:</strong>&nbsp;
-  <select name='defunct_TA' style='width:50px'>
-    <option value='Y' <?php echo $defunct_TA=='Y'?'selected=selected':''?>>Yes</option>
-    <option value='N' <?php echo $defunct_TA=='N'?'selected=selected':''?>>No</option>
+  <strong><?php echo $MSG_classroom ?>&nbsp;:</strong>&nbsp;
+  <select name='room_id' style='width:150px'>
+     <option value='0' >None</option>
+  <?php 
+      $sql = "SELECT * FROM `ip_classroom` ORDER BY `room_id`";
+      $result = $mysqli->query($sql);
+      while($row = $result->fetch_object()){
+        echo "<option value='{$row->room_id}'";
+        if($room_id==$row->room_id) echo 'selected';
+        echo ">{$row->classroom}</option>";
+      }
+  ?>
   </select>
   </p>
   <p align=left><strong><?php echo $MSG_Public."/".$MSG_Private ?>&nbsp;:</strong>&nbsp;

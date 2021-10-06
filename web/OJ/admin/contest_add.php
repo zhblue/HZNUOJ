@@ -29,7 +29,7 @@
     $description=$mysqli->real_escape_string(str_replace("<br />\r\n<!---->","",$_POST['description']));//火狐浏览器中kindeditor会在空白内容的末尾加入<br />\r\n<!---->
     $description = str_replace("<!---->","",$description);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
     $user_limit = $mysqli->real_escape_string($_POST['user_limit']);
-    $defunct_TA = $mysqli->real_escape_string($_POST['defunct_TA']);
+    $room_id = $mysqli->real_escape_string($_POST['room_id']);
     $open_source = $mysqli->real_escape_string($_POST['open_source']);
     $practice = $mysqli->real_escape_string($_POST['practice']);
     $unlock = intval($mysqli->real_escape_string($_POST['unlock']));
@@ -60,8 +60,8 @@
 	  //echo $t." ";
       $langmask+=1<<$t;
     }
-    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, defunct_TA, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`)
-          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$defunct_TA', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize')";
+    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`)
+          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize')";
   //echo $sql;
   $mysqli->query($sql) or die($mysqli->error);
   //添加contest记录 end  
@@ -148,7 +148,7 @@ else{
   $third_prize=$row['third_prize'];
 	$private=$row['private'];
 	$user_limit = $row['user_limit']=="Y"?'Y':'N';
-	$defunct_TA = $row['defunct_TA']=="Y"?'Y':'N';
+	$room_id = $row['room_id'];
 	$open_souce = $row['open_source']=="Y"?'Y':'N';
 	$practice = $row['practice'];
 	$password=$row['password'];
@@ -256,15 +256,18 @@ else if(isset($_POST['problem2contest'])){
      echo "<option value='N' selected='selected'>No</option>";
   } ?>
   </select>&nbsp;&nbsp;
-  <strong>Defunct TA&nbsp;:</strong>&nbsp;
-  <select name='defunct_TA' style='width:50px'>
-  <?php if(isset($_GET['cid'])){ ?>
-    <option value='Y' <?php echo $defunct_TA=='Y'?'selected=selected':''?>>Yes</option>
-    <option value='N' <?php echo $defunct_TA=='N'?'selected=selected':''?>>No</option>
-  <?php  }else { 
-	 echo "<option value='Y'>Yes</option>";
-     echo "<option value='N' selected='selected'>No</option>";
-  } ?>
+  <strong><?php echo $MSG_classroom ?>&nbsp;:</strong>&nbsp;
+  <select name='room_id' style='width:150px'>
+     <option value='0' >None</option>
+  <?php 
+      $sql = "SELECT * FROM `ip_classroom` ORDER BY `room_id`";
+      $result = $mysqli->query($sql);
+      while($row = $result->fetch_object()){
+        echo "<option value='{$row->room_id}'";
+        if($room_id==$row->room_id) echo 'selected';
+        echo ">{$row->classroom}</option>";
+      }
+  ?>
   </select>
   </p>
   <p align=left><strong><?php echo $MSG_Public."/".$MSG_Private ?>&nbsp;:</strong>&nbsp;

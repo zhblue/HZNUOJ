@@ -182,7 +182,7 @@ function generate_url($data){
           <th><?php echo $MSG_LANG ?></th>
           <th><?php echo $MSG_CODE_LENGTH ?></th>
           <th><?php echo $MSG_SUBMIT_TIME ?></th>
-          <th><?php echo $MSG_JUDGER ?></th>
+          <th><?php echo $MSG_Seat ?>/IP</th>
         </tr>
         </thead>
         <tbody>

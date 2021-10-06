@@ -94,9 +94,9 @@ CREATE TABLE IF NOT EXISTS `points_log` (
   PRIMARY KEY (`index`),
   KEY `solution_id` (`solution_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-ALTER TABLE `class_list` ADD `give_points` DECIMAL(10,2) NOT NULL DEFAULT '0.00' AFTER `enrollment_year`;
-ALTER TABLE `users` ADD `activateCode` VARCHAR(48) NOT NULL DEFAULT '' AFTER `points`;
-ALTER TABLE `users` ADD `activateTimelimit` datetime DEFAULT NULL AFTER `activateCode`;
+ALTER TABLE `class_list` ADD COLUMN `give_points` DECIMAL(10,2) NOT NULL DEFAULT '0.00' AFTER `enrollment_year`;
+ALTER TABLE `users` ADD COLUMN `activateCode` VARCHAR(48) NOT NULL DEFAULT '' AFTER `points`;
+ALTER TABLE `users` ADD COLUMN `activateTimelimit` datetime DEFAULT NULL AFTER `activateCode`;
 
 CREATE TABLE `log_chart` ( 
   `log_date` DATE NOT NULL ,
@@ -105,3 +105,46 @@ CREATE TABLE `log_chart` (
   `hit_log` INT(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`log_date`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_classroom` (
+  `room_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `classroom` VARCHAR(100) NOT NULL ,
+  `rows` INT(11) NOT NULL DEFAULT '0' ,
+  `columns` INT(11) NOT NULL DEFAULT '0' ,
+  `seat_forbid_multiUser_login` tinyint(1) NOT NULL DEFAULT '1' ,
+  `user_forbid_multiIP_login` tinyint(1) NOT NULL DEFAULT '1' ,
+  PRIMARY KEY (`classroom`) ,
+  KEY (`room_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_seat` (
+  `seat_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `ip` varchar(46) NOT NULL DEFAULT '',
+  `room_id` INT(11) NOT NULL ,
+  PRIMARY KEY (`seat_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `ip_list` (
+  `ip_id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `pcname` varchar(100) NOT NULL ,
+  `ip` varchar(46) NOT NULL ,
+  PRIMARY KEY (`ip`) ,
+  KEY (`ip_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `contest_online` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `contest_id` INT(11) NOT NULL ,
+  `user_id` varchar(48) NOT NULL ,
+  `ip` varchar(46) NOT NULL ,
+  `room_id` INT(11) NOT NULL DEFAULT '0' ,
+  `firsttime` datetime NOT NULL ,
+  `lastmove` datetime NOT NULL ,
+  `allow_change_seat` tinyint(1) NOT NULL DEFAULT '0' ,
+  PRIMARY KEY ( `contest_id`, `user_id`, `ip`, `room_id`) ,
+  KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+ALTER TABLE `contest` ADD COLUMN `room_id` INT(11) NOT NULL DEFAULT '0' AFTER `isTop`;
+ALTER TABLE `hit_log` CHANGE `user_id` `user_id` VARCHAR(48);
+ALTER TABLE `hit_log` ADD INDEX `user_id` (`user_id`);

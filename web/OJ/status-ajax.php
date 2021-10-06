@@ -22,14 +22,25 @@
     $solution_id=intval($_GET['solution_id']);
   }
   if($OJ_SIM){
-    $sql="SELECT s.*,sim.*,u.`nick` FROM solution AS s LEFT JOIN `sim` AS sim ON s.solution_id=sim.s_id LEFT JOIN `users` AS u ON s.`user_id`=u.`user_id` WHERE s.solution_id='$solution_id' LIMIT 1";
+    $sql="SELECT s.*,sim.*,u.`nick`, `ip_list`.`pcname` FROM solution AS s 
+          LEFT JOIN `sim` AS sim ON s.solution_id=sim.s_id 
+          LEFT JOIN `users` AS u ON s.`user_id`=u.`user_id` 
+          LEFT JOIN `ip_list` ON s.`ip`=`ip_list`.`ip`
+          WHERE s.solution_id='$solution_id' LIMIT 1";
   } else {
-    $sql="SELECT s.*, u.`nick` FROM `solution` AS s LEFT JOIN `users` AS u ON s.`user_id`=u.`user_id` WHERE solution_id='$solution_id' LIMIT 1";
+    $sql="SELECT s.*, u.`nick`, `ip_list`.`pcname` FROM `solution` AS s 
+          LEFT JOIN `users` AS u ON s.`user_id`=u.`user_id` 
+          LEFT JOIN `ip_list` ON s.`ip`=`ip_list`.`ip` 
+          WHERE solution_id='$solution_id' LIMIT 1";
   }
   //echo $sql;
   $result = $mysqli->query($sql);// or die("Error! ".$mysqli->error);
   if ($result) {
     $row=$result->fetch_array();
+    if (mb_strlen($row['pcname'], 'utf-8')>0){
+      $pcname = "【".$row['pcname']."】";
+    } else $pcname = "";
+    $seat = ($pcname!="") ? $pcname : substr_replace($row['ip'],"**",0,strpos($row['ip'],"."));
     if(isset($_GET['tr']) && isset($_SESSION['user_id'])){
       $res=$row['result'];
       if ($res==11) {
@@ -52,7 +63,7 @@
         $contest_id = $row['contest_id'];
         if ($contest_id>0) {
           $sql = "SELECT `title` FROM `contest` WHERE `contest_id`='$contest_id'";
-				  $contest_title = $mysqli->query($sql)->fetch_array()[0];
+          $contest_title = $mysqli->query($sql)->fetch_array()[0];
           if (stripos($contest_title,$OJ_NOIP_KEYWORD)!==false) {
             echo "$OJ_NOIP_KEYWORD";
             exit(0);
@@ -72,9 +83,9 @@
               $append = "<span class='am-btn am-btn-secondary am-btn-sm'>".$row['sim_s_id']."(".$row['sim']."%)</span>";
             }
             if($row['sim_s_id']) $append .= "<span sid='".$row['sim_s_id']."' class='original'></span>";
-            echo $row['result'].",".$row['memory']." KB,".$row['time']." ms,".$row['judger'].",".($row['pass_rate']*100).",".$row['sim_s_id'].",".$append.",".$http_judge_form;
+            echo $row['result'].",".$row['memory']." KB,".$row['time']." ms,".$seat.",".($row['pass_rate']*100).",".$row['sim_s_id'].",".$append.",".$http_judge_form;
           } else {
-            echo $row['result'].",".$row['memory']." KB,".$row['time']." ms,".$row['judger'].",".($row['pass_rate']*100).",none,0,".$http_judge_form;
+            echo $row['result'].",".$row['memory']." KB,".$row['time']." ms,".$seat.",".($row['pass_rate']*100).",none,0,".$http_judge_form;
           }
         }
      }
