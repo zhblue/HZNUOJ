@@ -94,6 +94,8 @@
         lock_time=<?php echo $view_lock_time ?>;
       <?php }?>
       function time_format(time_stamp) {
+          var d = Math.floor(time_stamp / 86400);
+          time_stamp -= d * 86400;
           var h = Math.floor(time_stamp / 3600);
           time_stamp -= h * 3600;
           var m = Math.floor(time_stamp / 60);
@@ -102,7 +104,13 @@
           if (h < 10) h = "0" + h;
           if (m < 10) m = "0" + m;
           if (s < 10) s = "0" + s;
-          return h+":"+m+":"+s;
+      <?php if($OJ_LANG == "cn"){ ?>
+          var day =d + "天 ";
+      <?php } else {?>
+          var day = d + "Day" + (d>1?"s ":" ");
+      <?php }?>
+          if (d == 0) day = "";
+          return day+h+":"+m+":"+s;
       }
 
       function update() {
