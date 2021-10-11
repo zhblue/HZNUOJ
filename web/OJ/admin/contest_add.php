@@ -46,7 +46,8 @@
     $first_prize = $mysqli->real_escape_string($_POST['first_prize']);
     $second_prize = $mysqli->real_escape_string($_POST['second_prize']);
     $third_prize = $mysqli->real_escape_string($_POST['third_prize']);
-
+    $start_by_login_time = intval(($_POST['start_by_login_time']));
+    $enable_overtime = intval(($_POST['enable_overtime']));
     if (get_magic_quotes_gpc ()){
       $title = stripslashes ($title);
       $private = stripslashes ($private);
@@ -60,8 +61,8 @@
 	  //echo $t." ";
       $langmask+=1<<$t;
     }
-    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`)
-          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize')";
+    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`,`start_by_login_time`,`enable_overtime`)
+          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize','$start_by_login_time','$enable_overtime')";
   //echo $sql;
   $mysqli->query($sql) or die($mysqli->error);
   //添加contest记录 end  
@@ -155,6 +156,8 @@ else{
 	$langmask=$row['langmask'];
   $description=str_replace("<br />\r\n<!---->","",$row['description']);//kindeditor会在空白内容的末尾加入<br />\r\n<!---->
   $description = str_replace("<!---->","",$description);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
+  $start_by_login_time=$row['start_by_login_time'];
+  $enable_overtime=$row['enable_overtime'];
 	$title=htmlentities($row['title'],ENT_QUOTES,"UTF-8")." copy";
       $result->free();
       $plist="";
@@ -306,11 +309,13 @@ else if(isset($_POST['problem2contest'])){
   } ?>
   </select>&nbsp;&nbsp;
   <strong><?php echo $MSG_LockTime ?>:</strong>&nbsp;<input name='lock_time' id='lock_time' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($lock_time)&&$lock_time!="") {if($unlock==0) echo ceil($lock_time/3600); else echo $lock_time; } else echo 0?>" maxlength="2" required>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label><input type='checkbox' name='start_by_login_time' value='1' <?php if($start_by_login_time) echo 'checked'?> />&nbsp;<?php echo $MSG_start_by_login_time ?></label>
   </p>
   <p align=left>
   <strong><?php echo $MSG_GOLD ?>:</strong>&nbsp;<input name='first_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($first_prize)&&$first_prize!="") echo $first_prize; else echo 1?>" maxlength="2" required>&nbsp;&nbsp;
   <strong><?php echo $MSG_SILVER ?>:</strong>&nbsp;<input name='second_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($second_prize)&&$second_prize!="") echo $second_prize; else echo 3?>" maxlength="2" required>&nbsp;&nbsp;
   <strong><?php echo $MSG_BRONZE ?>:</strong>&nbsp;<input name='third_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($third_prize)&&$third_prize!="") echo $third_prize; else echo 5?>" maxlength="2" required>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label><input type='checkbox' name='enable_overtime' value='1' <?php if($enable_overtime) echo 'checked'?> />&nbsp;<?php echo $MSG_enable_overtime?></label>
   </p>
     <table >
     <tr>

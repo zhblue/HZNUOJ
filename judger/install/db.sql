@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS `contest` (
   `practice` tinyint(4) DEFAULT '0',
   `isTop` tinyint(1) NOT NULL DEFAULT '0',
   `room_id` INT(11) NOT NULL DEFAULT '0',
+  `start_by_login_time` tinyint(1) NOT NULL DEFAULT '0',
+  `enable_overtime` TINYINT(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contest_id`),
   KEY `contest_id` (`contest_id`,`defunct`,`private`,`defunct_TA`,`open_source`) USING BTREE,
   KEY `running_contest` (`start_time`,`end_time`,`practice`)
@@ -585,6 +587,16 @@ CREATE TABLE IF NOT EXISTS `contest_online` (
   `lastmove` datetime NOT NULL ,
   `allow_change_seat` tinyint(1) NOT NULL DEFAULT '0' ,
   PRIMARY KEY ( `contest_id`, `user_id`, `ip`, `room_id`) ,
+  KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `contest_loginTime` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `contest_id` INT(11) NOT NULL ,
+  `user_id` varchar(48) NOT NULL ,
+  `startTime` datetime DEFAULT NULL ,
+  `overTime` INT(11) NOT NULL DEFAULT '0' ,
+  PRIMARY KEY ( `contest_id`, `user_id`) ,
   KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

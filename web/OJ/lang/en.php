@@ -151,6 +151,9 @@
   $MSG_Login_Option = "Login Option";
   $MSG_Activity ="Activity";
   $MSG_Idle = "Idle";
+  $MSG_OverTime = "Set OverTime";
+  $MSG_start_by_login_time = "Calculate the {$MSG_PROBLEM}'s completion time based on user's login time";
+  $MSG_enable_overtime = "Enable set overtime to end someone's {$MSG_CONTEST}";
 
   /*
   下面的代码请不要乱动，以免出问题！！！

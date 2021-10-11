@@ -29,7 +29,6 @@ if (isset($OJ_points_enable) && $OJ_points_enable && !isset($_SESSION['contest_i
 	}
 } 
 require_once("include/my_func.inc.php");
-  $now=strftime("%Y-%m-%d %H:%M",time());
 $user_id=$_SESSION['user_id'];
 if (isset($_POST['cid'])){
 	$pid=intval($_POST['pid']);
@@ -82,12 +81,13 @@ if (isset($_POST['id'])) {
         $test_run=($cid<0);
 	if($test_run) $cid=-$cid;
 	// check user if private
-	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<='$now' AND `end_time`>'$now'";
+	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND date_add(`end_time`, interval ". getContestEndtime($user_id, $cid)['overTime']." minute)>=now()";
 	$result=$mysqli->query($sql);
 	$rows_cnt=$result->num_rows;
 	if ($rows_cnt!=1){
 		$result->free();
-		$view_errors="<span class='am-text-danger'>You Can't Submit Now Because Your are not invited by the contest or the contest is not running!!</span>";
+		$view_errors="<span class='am-text-danger'>You Can't Submit Now Because Your are not invited by the contest or $MSG_ContestIsClosed</span>";
+		$_GET['cid']=$cid;
 		require("template/".$OJ_TEMPLATE."/error.php");
 		exit(0);
 	}else{

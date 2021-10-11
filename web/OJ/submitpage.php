@@ -22,14 +22,10 @@
     require("template/".$OJ_TEMPLATE."/error.php");
     exit(0);
   }
-
+  $uid = $_SESSION['user_id'];
 
   if (isset($_GET['id'])) { // 如果是提交的是普通题目
-
-
     $id=intval($_GET['id']);
-    $uid = $_SESSION['user_id'];
-    
     /* 判断该用户是否有查看该题目权限 start */
     $set_name = get_problemset($id);
     if(!can_access_problem($uid, $id)){
@@ -91,6 +87,10 @@ WHERE
 
     /* 判断是否有错误 start */
     $error_flag = false;
+    if (getContestEndtime($uid, $cid)['endtime']<time()){
+      $view_errors = "<font style='color:red;'>$MSG_ContestIsClosed</font>";
+      $error_flag = true;
+    }
     if ($user_limit && !isset($_SESSION['contest_id'])) { // 如果不是队伍账号，则退出
       $view_errors = "<font style='color:red;text-decoration:underline;'>You should use team account !</font>";
       $error_flag = true;

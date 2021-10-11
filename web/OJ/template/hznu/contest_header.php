@@ -12,6 +12,15 @@
  // 是否显示tag的判断
 require_once "include/db_info.inc.php";
 if(!isset($mysqli))exit(0);
+$url=basename($_SERVER['REQUEST_URI']);
+if(isset($OJ_NEED_LOGIN)&&$OJ_NEED_LOGIN&&(
+  $url!='loginpage.php' && $url!='registerpage.php'&&
+  $url!='lostpassword.php'&& $url!='lostpassword2.php'&&
+  $url!='faqs.php' && $url!='index.php' && $url!=''
+  ) && !isset($_SESSION['user_id'])){
+  header("location:loginpage.php");
+  exit();
+}
 /*Count the hit time START*/
 //if($_SERVER['REMOTE_ADDR']!='127.0.0.1') {
   $user_id2="";
@@ -44,12 +53,26 @@ if(isset($_GET['cid'])){
   $warnning_percent=90;
   $cid = $mysqli->real_escape_string($_GET['cid']);
   $sql="SELECT UNIX_TIMESTAMP(start_time) AS start_time, UNIX_TIMESTAMP(end_time) AS end_time,`unlock`,lock_time,title,user_limit
-        ,c.room_id,`private`,`defunct`,i.`seat_forbid_multiUser_login`,i.`user_forbid_multiIP_login` FROM contest c
+        ,c.room_id,`private`,`defunct`,i.`seat_forbid_multiUser_login`,i.`user_forbid_multiIP_login`,`start_by_login_time`,`enable_overtime`,cl.`overTime` FROM contest c
         LEFT JOIN ip_classroom i ON c.room_id=i.room_id 
-        WHERE contest_id='$cid'";
+        LEFT JOIN (SELECT * FROM `contest_loginTime` WHERE `contest_loginTime`.`user_id`='$user_id2') cl ON cl.contest_id=c.contest_id
+        WHERE c.contest_id='$cid'";
   $res=$mysqli->query($sql);
   $contest_time=$res->fetch_array();
-  $contest_len=$contest_time[1]-$contest_time[0];
+  if($contest_time['enable_overtime']){
+    $contest_endtime=$contest_time['end_time']+intval($contest_time['overTime'])*60;
+  } else $contest_endtime=$contest_time['end_time'];
+  $contest_len=$contest_endtime-$contest_time['start_time'];
+  if($contest_time['start_by_login_time'] && $user_id2!=""){//记录contest登入时间
+    $sql = "SELECT `user_id` FROM `solution` WHERE contest_id='$cid' AND `user_id`='$user_id2' LIMIT 1";
+    if($mysqli->query($sql)->num_rows==0){//还没提交代码
+      $sql = "SELECT `user_id` FROM `contest_loginTime` WHERE contest_id='$cid' AND `user_id`='$user_id2' AND (NOT ISNULL(`startTime`) OR `startTime`='')";
+      if($mysqli->query($sql)->num_rows==0){//而且还没有登入记录，就记录contest登入时间
+        $sql = "INSERT INTO `contest_loginTime`(`contest_id`,`user_id`,`startTime`) VALUES('$cid','$user_id2',NOW()) ON DUPLICATE KEY UPDATE `startTime`=NOW()";
+        $mysqli->query($sql);
+      }
+    }
+  }
   $now=time();
   $bar_percent=0;
   $is_started=false;
@@ -248,7 +271,7 @@ BOT;
     </div>
     <div class="am-u-sm-3 am-text-right">
       <span class="text-bold"><?php echo $MSG_EndTime ?>: </span>
-      <span><?php echo date("Y-m-d, H:i:s",$contest_time[1]) ?></span>
+      <span><?php echo date("Y-m-d, H:i:s", $contest_endtime) ?></span>
     </div>
   </div>
 

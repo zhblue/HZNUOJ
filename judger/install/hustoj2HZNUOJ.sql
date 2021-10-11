@@ -224,6 +224,8 @@ ALTER TABLE `contest` ADD COLUMN `third_prize` int(11) DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `practice` tinyint(4) DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `isTop` tinyint(1) NOT NULL DEFAULT '0';
 ALTER TABLE `contest` ADD COLUMN `room_id` INT(11) NOT NULL DEFAULT '0' AFTER `isTop`;
+ALTER TABLE `contest` ADD COLUMN `start_by_login_time` TINYINT(1) NOT NULL DEFAULT '0' AFTER `room_id`;
+ALTER TABLE `contest` ADD COLUMN `enable_overtime` TINYINT(1) NOT NULL DEFAULT '0' AFTER `start_by_login_time`;
 ALTER TABLE `contest` ADD INDEX `contest_id` (`contest_id`,`defunct`,`private`,`defunct_TA`,`open_source`) USING BTREE;
 ALTER TABLE `contest` ADD INDEX `running_contest` (`start_time`,`end_time`,`practice`);
 UPDATE `contest` SET `first_prize`=1,`second_prize`=3,`third_prize`=5;
@@ -535,5 +537,15 @@ CREATE TABLE IF NOT EXISTS `contest_online` (
   `lastmove` datetime NOT NULL ,
   `allow_change_seat` tinyint(1) NOT NULL DEFAULT '0' ,
   PRIMARY KEY ( `contest_id`, `user_id`, `ip`, `room_id`) ,
+  KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `contest_loginTime` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `contest_id` INT(11) NOT NULL ,
+  `user_id` varchar(48) NOT NULL ,
+  `startTime` datetime DEFAULT NULL ,
+  `overTime` INT(11) NOT NULL DEFAULT '0' ,
+  PRIMARY KEY ( `contest_id`, `user_id`) ,
   KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

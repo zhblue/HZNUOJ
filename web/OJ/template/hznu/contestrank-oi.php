@@ -177,16 +177,17 @@
           echo "</td>";
           $uscore = $U[$i]->score;
           $usolved=$U[$i]->solved;
-        echo "<td class='rankcell'>";
-          echo "<a name=\"$uuid\" href=\"userinfo.php?user=$uuid\">$col2</a>\n";
-
-
-          echo "<td class='rankcell'><div class='nick'>".$col3;
-          if(isset($is_excluded[$uuid])) echo " <span class='am-icon-user-times'></span>";
-          echo "</div></td>\n";
-          echo "<td class='rankcell'>$uscore\n";
-          echo "<td class='rankcell'><a href=\"status.php?user_id=$uuid&cid=$cid\">$usolved</a>\n";
-          echo "<td class='rankcell'>".sec2str($U[$i]->time);
+          echo "<td class='rankcell' id='td$uuid'><a name=\"$uuid\" href=\"userinfo.php?user=$uuid\">$col2</a>";
+          if(HAS_PRI("edit_contest") && $enable_overtime) {
+            echo "<span id='vt $uuid $user_over_time[$uuid]' data-am-modal=\"{target: '#modal-overtime', width:530}\" style='margin-left: 5px; margin-right: 2px; cursor: pointer;' class='am-icon-clock-o'>&nbsp;";
+            if($user_over_time[$uuid]!=0) echo $user_over_time[$uuid]."min"; else echo "&nbsp;&nbsp;&nbsp;&nbsp;";
+            echo "</span>";
+          }
+          echo "</td>\n";
+          echo "<td class='rankcell'><div class='nick'>$col3</div></td>\n";
+          echo "<td class='rankcell'>$uscore</td>\n";
+          echo "<td class='rankcell'><a href=\"status.php?user_id=$uuid&cid=$cid\">$usolved</a></td>\n";
+          echo "<td class='rankcell'>".sec2str($U[$i]->time)."</td>";
           foreach($pid_nums as $num){
             $bg_color="eeeeee";
             if (isset($U[$i]->p_ac_sec[$num[0]])&&$U[$i]->p_ac_sec[$num[0]]>0){
@@ -242,7 +243,17 @@
       </div>
     </div>
   </div>
-
+   <!-- ajax 设置用户加时div -->
+   <div class="am-modal am-modal-no-btn" tabindex="-1" id="modal-overtime">
+    <div class="am-modal-dialog">
+      <div class="am-modal-hd"><strong><?php echo $MSG_OverTime ?></strong>
+        <a class="am-close am-close-spin" data-am-modal-close>&times;</a>
+      </div>
+      <div class="am-modal-bd" id="modal-overtime-bd">
+        <i class="am-icon-spinner am-icon-pulse"></i> Loading...
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 <?php include "footer.php" ?>
@@ -257,10 +268,7 @@ for($i=0; $i<2*count($pid_nums); $i+=2){
   $( document ).ready( function () {
     $( "#rank_table" ).tablesorter({headers:{0:{sorter:false}<?php echo $sortHeader?>}});
   });
-</script>
-
-<!-- auto set nick-cell's max-width START-->
-<script>
+//<!-- auto set nick-cell's max-width START-->
   function change_max_width(){
     var p_cnt=<?php echo $pid_cnt ?>;
     var p_width=$("#p-cell-0").outerWidth();
@@ -276,11 +284,8 @@ for($i=0; $i<2*count($pid_nums); $i+=2){
   $(window).resize(function(){
     change_max_width();
   });
-</script>
-<!-- auto set nick-cell's max-width END-->
-
-<!-- set submission dialog contents START -->
-<script>
+//<!-- auto set nick-cell's max-width END-->
+//<!-- set submission dialog contents START -->
   $("td[id^='pcell']").click(function(){
     var id=$(this).attr("id");
     var arg=id.split(' ');
@@ -312,5 +317,40 @@ for($i=0; $i<2*count($pid_nums); $i+=2){
       }
     });
   });
+  //<!-- set submission dialog contents END -->
+  <?php if(HAS_PRI("edit_contest") && $enable_overtime) { ?>
+  $("span[id^='vt']").click(function(){
+    var id=$(this).attr("id");
+    var arg=id.split(' ');
+    var uid=arg[1];
+    var over_time = arg[2]==''?0:arg[2];
+    var cid=<?php echo $cid; ?>;
+    //set loading icon
+    var context="<div class='am-text-left'><form id='vtform' class='am-form am-form-inline'>";
+    context+="<div class='am-form-group'><input type='hidden' name='cid' value='"+cid+"'><input type='hidden' name='uid' value='"+uid+"'>给"+uid+"加时</div>";
+    context+="<div class='am-form-group am-form-icon am-form-group-sm'><i class='am-icon-clock-o'></i><input class='am-form-field' type='number' style='width:150px; margin-left: 5px;' id='overtime-value' name='overtime' min='-99' max='99' value='"+over_time+"' required /></div>";
+    context+="<div class='am-form-group' style='margin-left: 5px;'>分钟</div>";
+    context+="<input type='button' style='margin-left: 5px;' name='submit' value='确定' class='am-btn am-btn-primary am-btn-sm' onclick='set_overtime(this,\""+uid+"\")'></form>";
+    context+="注：用于设置用户在本次<?php echo $MSG_CONTEST ?>结束时间的加时，正值增、负值减，加时0分钟则按统一时间在【<?php echo date("Y-m-d H:i:s", $contest_endtime) ?>】结束。</div>";
+    $("#modal-overtime-bd").html(context);
+  });
+function set_overtime(btn, uid){
+  var overtime=$("#overtime-value").val();
+  if (overtime>99) overtime=99; else if (overtime<-99) overtime=-99;
+  $.post(
+    "admin/ajax.php",
+    $("#vtform").serialize(),
+    function(data,textStatus) {
+      if(textStatus=="success"){
+        $('#modal-overtime').modal('close');
+        var context="<a name='"+uid+"' href='userinfo.php?user="+uid+"'>"+uid+"</a>";
+        context+="<span id='vt "+uid+" "+overtime+"' data-am-modal=\"{target: '#modal-overtime', width:530}\" style='margin-left: 5px; margin-right: 2px; cursor: pointer;' class='am-icon-clock-o'>&nbsp;";
+        context+= (overtime!=0) ? overtime+"min</span>": "&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+        $("#td"+uid).html(context);
+      }
+  })
+  return false;
+}
+<?php } ?>
 </script>
-<!-- set submission dialog contents END -->
+

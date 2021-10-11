@@ -111,9 +111,7 @@ while($uid=$res->fetch_array()[0]){
 }
 
 
-$sql="SELECT `start_time`,`title`,`end_time`,user_limit,lock_time,`unlock`,first_prize,second_prize,third_prize,room_id FROM `contest` WHERE `contest_id`='$cid'";
-//$result=$mysqli->query($sql) or die($mysqli->error);
-//$rows_cnt=$result->num_rows;
+$sql="SELECT `start_time`,`title`,`end_time`,user_limit,lock_time,`unlock`,first_prize,second_prize,third_prize,room_id,start_by_login_time,enable_overtime FROM `contest` WHERE `contest_id`='$cid'";
 if($OJ_MEMCACHE){
     require("./include/memcache.php");
     $result = $mysqli->query_cache($sql);// or die("Error! ".$mysqli->error);
@@ -135,6 +133,8 @@ if ($rows_cnt>0){
     $end_time=strtotime($row['end_time']);
     $title=$row['title'];
     $user_limit = $row['user_limit']=="Y"?1:0;
+    $start_by_login_time=intval($row['start_by_login_time']);
+    $enable_overtime=intval($row['enable_overtime']);
 }
 
 if ($start_time==0){
@@ -256,7 +256,24 @@ if($OJ_MEMCACHE){
 $user_cnt=0;
 $user_name='';
 $U=array();
-$ulist1=array();
+$ulist1=array_unique(array_column($result, 'user_id'));
+$user_start_time=array();
+foreach($ulist1 as $u){
+    $user_start_time[$u]=$start_time;
+}
+if($start_by_login_time || $enable_overtime){
+    $user_over_time=array();
+    $sql = "SELECT * FROM `contest_loginTime` WHERE `contest_id`='$cid'";
+    $result1 = $mysqli->query($sql);
+    while($row = $result1->fetch_object()){
+        if($start_by_login_time){
+            $user_start_time[$row->user_id]=strtotime($row->startTime);
+        }
+        if($enable_overtime){
+            $user_over_time[$row->user_id]=$row->overTime;
+        }
+    }
+}
 
 for ($i=0; $i<$rows_cnt; $i++){
     $row=$result[$i];
@@ -274,12 +291,11 @@ for ($i=0; $i<$rows_cnt; $i++){
         $U[$user_cnt]->class = $row['class'];
         $user_name=$n_user;
         $user_cnt2=$user_cnt++;
-        array_push($ulist1,$user_name);
     }
     if($unlock != 1 && time() < $end_time && $lock < strtotime($row['in_date']))
-        $U[$user_cnt2]->Add($row['num'],strtotime($row['in_date'])-$start_time,-1);//Unknown
+        $U[$user_cnt2]->Add($row['num'],strtotime($row['in_date'])-$user_start_time[$row['user_id']],-1);//Unknown
     else
-        $U[$user_cnt2]->Add($row['num'],strtotime($row['in_date'])-$start_time,$row['pass_rate']);
+        $U[$user_cnt2]->Add($row['num'],strtotime($row['in_date'])-$user_start_time[$row['user_id']],$row['pass_rate']);
 }
 
 /* 获取查询结果 start */

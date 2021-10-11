@@ -2,7 +2,19 @@
 require_once("../include/db_info.inc.php");
 require_once("../include/my_func.inc.php");
 
-if(isset($_GET['getUserList'])) {
+if(isset($_POST['overtime'])) {
+    if (!HAS_PRI("edit_contest")) {
+        echo "error";
+        exit(0);
+    }
+    $cid = intval($_POST['cid']);
+    $uid = $mysqli->real_escape_string($_POST['uid']);
+    $overtime = intval($_POST['overtime']);
+    if ($overtime>99) $overtime=99; else if ($overtime<-99) $overtime=-99;
+    $sql = "INSERT INTO `contest_loginTime`(`contest_id`,`user_id`,`overTime`) VALUES('$cid','$uid','$overtime') ON DUPLICATE KEY UPDATE `overTime`='$overtime'";
+    echo $mysqli->query($sql)->num_rows;
+    //echo $sql;
+} else if(isset($_GET['getUserList'])) {
     $classes=$_POST['classes'];
     $u = array();
     foreach($classes as $class){

@@ -151,7 +151,9 @@
   $MSG_Login_Option = "登录选项";
   $MSG_Activity ="活动";
   $MSG_Idle = "闲置";
-  
+  $MSG_OverTime = "加时设置";
+  $MSG_start_by_login_time = "以用户登入{$MSG_CONTEST}的时间为基准计算{$MSG_PROBLEM}的完成时间（影响排名）";
+  $MSG_enable_overtime = "允许以加时方式调整个别账号的{$MSG_CONTEST}结束时间";
   /*
   下面的代码请不要乱动，以免出问题！！！
   */

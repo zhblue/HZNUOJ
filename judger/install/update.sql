@@ -148,3 +148,15 @@ CREATE TABLE IF NOT EXISTS `contest_online` (
 ALTER TABLE `contest` ADD COLUMN `room_id` INT(11) NOT NULL DEFAULT '0' AFTER `isTop`;
 ALTER TABLE `hit_log` CHANGE `user_id` `user_id` VARCHAR(48);
 ALTER TABLE `hit_log` ADD INDEX `user_id` (`user_id`);
+
+ALTER TABLE `contest` ADD COLUMN `start_by_login_time` TINYINT(1) NOT NULL DEFAULT '0' AFTER `room_id`;
+ALTER TABLE `contest` ADD COLUMN `enable_overtime` TINYINT(1) NOT NULL DEFAULT '0' AFTER `start_by_login_time`;
+CREATE TABLE IF NOT EXISTS `contest_loginTime` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `contest_id` INT(11) NOT NULL ,
+  `user_id` varchar(48) NOT NULL ,
+  `startTime` datetime DEFAULT NULL ,
+  `overTime` INT(11) NOT NULL DEFAULT '0' ,
+  PRIMARY KEY ( `contest_id`, `user_id`) ,
+  KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;

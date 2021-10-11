@@ -560,4 +560,25 @@ function getPCNameByUserID($uid, $contestid, $room_id){
     }
     return implode(",", $r);
 }
+
+function getContestEndtime($uid, $contestid){
+    global $mysqli;
+    $sql="SELECT UNIX_TIMESTAMP(end_time) AS end_time,`enable_overtime`,cl.`overTime` FROM contest c
+        LEFT JOIN (SELECT * FROM `contest_loginTime` WHERE `contest_loginTime`.`user_id`='$uid') cl ON cl.contest_id=c.contest_id
+        WHERE c.contest_id='$contestid'";
+    $r=array();
+    if($row=$mysqli->query($sql)->fetch_object()) {
+        if($row->enable_overtime){
+            $r['endtime']=$row->end_time+intval($row->overTime)*60;
+            $r['overTime']=intval($row->overTime);
+          } else {
+            $r['endtime']=$row->end_time;
+            $r['overTime']=0;
+          }
+    } else {
+        $r['endtime']=0;
+        $r['overTime']=0;
+    }
+    return $r;
+}
 ?>
