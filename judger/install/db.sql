@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `contest` (
   `password` char(16) NOT NULL DEFAULT '',
   `user_id` varchar(48) NOT NULL DEFAULT 'admin',
   `user_limit` char(1) NOT NULL,
-  `defunct_TA` char(1) NOT NULL,
+  `defunct_TA` char(1) NOT NULL DEFAULT 'N',
   `open_source` char(1) NOT NULL,
   `lock_time` int(11) DEFAULT NULL,
   `unlock` tinyint(4) DEFAULT '1',
