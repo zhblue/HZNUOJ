@@ -208,19 +208,21 @@ $sql="SELECT
         ORDER BY users.user_id,in_date";
 */
 
-
-$cls = $mysqli->real_escape_string($_GET['class']); // class
+if(isset($_GET['class'])) {
+    $_SESSION['class'] = $mysqli->real_escape_string($_GET['class']);
+}
+$cls = $_SESSION['class'];
 switch($cls){
     case "":
-        $sql_filter = " ";
+        $sql_filter = " WHERE 1 ";
         break;
     case "null":
-        if (!$user_limit) $sql_filter = " WHERE users.class='null' or users.class is null or users.class='其它'";
-        else $sql_filter = " team.class='null' or team.class is null or team.class='其它'";
+        if (!$user_limit) $sql_filter = " WHERE (users.class='null' or users.class is null or users.class='其它') ";
+        else $sql_filter = " WHERE (team.class='null' or team.class is null or team.class='其它') ";
         break;
     default:
         if (!$user_limit) $sql_filter = " WHERE users.class='$cls' ";
-        else $sql_filter = " WHERE team.class='$cls'";
+        else $sql_filter = " WHERE team.class='$cls' ";
 }
 
 if (!$user_limit)
@@ -310,14 +312,14 @@ if (!$user_limit){
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
     $haveNotStart_ulist=array_unique($haveNotStart_ulist);
-    $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `users` WHERE `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
+    $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `users` $sql_filter AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
 } else {
     $sql="SELECT `user_id` FROM `team` WHERE `contest_id`='$cid' order by `user_id`";
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
     $haveNotStart_ulist=array_unique($haveNotStart_ulist);
-    $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `team` WHERE `contest_id`='$cid' AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
+    $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `team` $sql_filter AND `contest_id`='$cid' AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
 }
 $res=$mysqli->query($sql) or die($mysqli->error);
 while($row=$res->fetch_object()) {

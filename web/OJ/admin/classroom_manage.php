@@ -125,10 +125,10 @@ if(!isset($_GET['do'])){
         $view[$cnt][3] = "<input type='number' style='width:50px;' name='columns' min='1' max='99' value='$row->columns' required />";
         if($row->seat_forbid_multiUser_login==1){
             $check1="checked";
-        }
+        } else $check1="";
         if($row->user_forbid_multiIP_login==1){
             $check2="checked";
-        }
+        } else $check2="";
         $view[$cnt][4] = "<label title='禁止在同一个座位/IP上登录多个账号（公网服务器建议解除禁止）'><input type='checkbox' name='seat_forbid_multiUser_login' value='1' $check1 />&nbsp;$MSG_seat_forbid_multiUser_login</label>";
         $view[$cnt][4] .="<br><label title='禁止同一个账号在不同的座位/IP上登录（公网服务器建议解除禁止）'><input type='checkbox' name='user_forbid_multiIP_login' value='1' $check2 />&nbsp;$MSG_user_forbid_multiIP_login</label>";
         $view[$cnt][5] = "<input type='submit' name='do' value='{$MSG_SUBMIT}' class='btn btn-primary'>";

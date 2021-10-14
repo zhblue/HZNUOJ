@@ -30,15 +30,15 @@
     ?>
     [ <?php echo $MSG_Class ?>
       <select id="class">
-        <option value="" <?php if ($_GET['class']=="") echo "selected"; ?> ><?php echo $MSG_ALL ?></option>
-        <option value="null" <?php if ($_GET['class']=="null") echo "selected"; ?> >其它</option>
+        <option value="" <?php if ($_SESSION['class']=="") echo "selected"; ?> ><?php echo $MSG_ALL ?></option>
+        <option value="null" <?php if ($_SESSION['class']=="null") echo "selected"; ?> >其它</option>
         <!-- don't remove "其它" option to for loop, if both null and "null" exist, there will occur two options -->
         <?php 
           $sz = count($classSet);
           for ($i=0; $i<$sz; $i++) {
             if ($classSet[$i]==null || $classSet[$i]=="null" || $classSet[$i]=="其它") continue; 
         ?>
-            <option value="<?php echo urlencode($classSet[$i]); ?>" <?php if ($_GET['class']==$classSet[$i]) echo "selected"; ?> ><?php echo $classSet[$i]; ?></option>
+            <option value="<?php echo urlencode($classSet[$i]); ?>" <?php if ($_SESSION['class']==$classSet[$i]) echo "selected"; ?> ><?php echo $classSet[$i]; ?></option>
         <?php
           }
         ?>

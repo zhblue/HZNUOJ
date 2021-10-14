@@ -45,6 +45,20 @@ if(isset($_GET['lock'])){
     $sql ="UPDATE `contest_online` SET `ip`='0.0.0.0' WHERE `contest_id`='$cid' AND `room_id`='$tmp'";//标记成0.0.0.0的都要踢出机房
     $mysqli->query($sql);
 }
+if(isset($_GET['class'])) {
+    $_SESSION['class'] = $mysqli->real_escape_string($_GET['class']);
+}
+$cls = $_SESSION['class'];
+switch($cls){
+    case "":
+        $sql_filter = " WHERE 1 ";
+        break;
+    case "null":
+        $sql_filter = " WHERE (u.class='null' or u.class is null or u.class='其它') ";
+        break;
+    default:
+        $sql_filter = " WHERE u.class='$cls' ";
+}
 $is_running = is_running($cid);
 $sql="SELECT c1.`room_id`,c1.`end_time`,c2.`classroom`,c2.`rows`,c2.`columns`,c3.pnums,c1.user_limit FROM contest as c1 
       LEFT JOIN `ip_classroom` as c2 ON c1.`room_id`=c2.`room_id` 
@@ -85,7 +99,7 @@ if($row = $result->fetch_object()){
             } else {
                 $sql .= " LEFT JOIN (SELECT * FROM `team` WHERE `contest_id`='$cid') AS u";
             }
-            $sql .= " ON c.`user_id`=u.`user_id` WHERE c.`contest_id`='$cid' AND c.`room_id`='$room_id' AND c.`ip`='$row->ip'";
+            $sql .= " ON c.`user_id`=u.`user_id` $sql_filter AND c.`contest_id`='$cid' AND c.`room_id`='$room_id' AND c.`ip`='$row->ip'";
             $res2=$mysqli->query($sql);
             $stu = array();
             $i=1;
@@ -158,7 +172,13 @@ if($row = $result->fetch_object()){
             $c = 1;
         }
     }
-    $sql="SELECT `user_id` FROM `privilege` WHERE `rightstr`='c$cid' ORDER BY `user_id`";
+    $sql="SELECT p.`user_id` FROM `privilege` AS p";
+    if (!$user_limit) {
+        $sql .= " JOIN `users` AS u";
+    } else {
+        $sql .= " JOIN (SELECT * FROM `team` WHERE `contest_id`='$cid') AS u";
+    }
+    $sql .= " ON p.`user_id`=u.`user_id` $sql_filter AND `rightstr`='c$cid' ORDER BY p.`user_id`";
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
     $haveNotStart_ulist=array_unique($haveNotStart_ulist);
@@ -168,10 +188,13 @@ if($row = $result->fetch_object()){
     $haveNotStart_ulist = array_diff($haveNotStart_ulist, $login_stu);
     $haveNotStart_ulist = array_unique($haveNotStart_ulist);
     $total_haveNotStart = count($haveNotStart_ulist);
-    $sql = "SELECT u.`user_id`, `nick`, `real_name`, c.`id`, c.`ip`, i.`pcname` FROM `users` AS u
-    LEFT JOIN (SELECT * FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id') AS c ON u.`user_id`=c.`user_id`
-    LEFT JOIN `ip_list` AS i ON c.`ip`=i.`ip` 
-    WHERE u.`user_id` in ('".implode("','", $haveNotStart_ulist)."') ORDER BY c.`ip`,u.`user_id`";
+    if (!$user_limit) {
+        $sql = "SELECT u.`user_id`, `nick`, `real_name`, c.`id`, c.`ip`, i.`pcname` FROM `users` AS u ";
+    } else {
+        $sql = "SELECT u.`user_id`, `nick`, `real_name`, c.`id`, c.`ip`, i.`pcname` FROM `team` AS u ";
+    }
+    $sql .= "LEFT JOIN (SELECT * FROM `contest_online` WHERE `contest_id`='$cid' AND `room_id`='$room_id') AS c ON u.`user_id`=c.`user_id`
+    LEFT JOIN `ip_list` AS i ON c.`ip`=i.`ip` $sql_filter AND u.`user_id` in ('".implode("','", $haveNotStart_ulist)."') ORDER BY c.`ip`,u.`user_id`";
     //echo $sql;
     $view_u = array();
     $i = 1;
@@ -186,6 +209,31 @@ if($row = $result->fetch_object()){
         $i++;
     }
 }
+/* 获取班级列表 start */
+$classSet = Array();
+if(isset($OJ_NEED_CLASSMODE)&&$OJ_NEED_CLASSMODE){
+    if (!$user_limit) {
+        $sql = "SELECT
+                DISTINCT(class)
+                FROM
+                (select * from solution where solution.contest_id='$cid' and num>=0 ) solution
+                    left join users
+                on users.user_id=solution.user_id
+                ORDER BY class";
+    } else {
+        $sql = "SELECT
+                DISTINCT(class)
+                FROM
+                (select * from solution where solution.contest_id='$cid' and num>=0 ) solution
+                RIGHT JOIN (SELECT * FROM team WHERE contest_id='$cid') team
+                on team.user_id=solution.user_id
+                ORDER BY class";
+    }
+    $result = $mysqli->query($sql) or die($mysqli->error);
+    while ($row=$result->fetch_object()) $classSet[] = $row->class;
+    $result->free();
+}
+/* 获取班级列表 end */
 /////////////////////////Template
 require("template/".$OJ_TEMPLATE."/seat_map.php");
 /////////////////////////Common foot

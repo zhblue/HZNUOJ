@@ -55,7 +55,6 @@
 </script>
 <!-- go to top btn auto hide END -->
 <!-- 动态显示时间 start -->
-<!-- 动态显示时间 start -->
 <script>
     var diff = new Date("<?php echo date("Y/m/d H:i:s")?>").getTime()-new Date().getTime();
     //alert(diff);
@@ -78,7 +77,6 @@
     }
     clock_foot();
 </script>
-<!-- 动态显示时间 end -->
 <!-- 动态显示时间 end -->
 
 <?php if (isset($_GET['cid']) && $is_started): ?>

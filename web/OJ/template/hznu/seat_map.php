@@ -136,10 +136,37 @@ function printOtherStu($stu){
             <header class="am-panel-hd">
             <table width="100%"><tr>
                 <?php 
-                echo "<td><b><span class='am-icon-desktop'></span> $classroom $MSG_SeatMap</b><label style='margin-left: 20px;'>额定 $total 人，已登入 $total_login 人，$total_haveNotStart 人未登入";
+                echo "<td><b><span class='am-icon-desktop'></span>【{$classroom}】$MSG_SeatMap</b><label style='margin-left: 20px;'>额定 $total 人，已登入 $total_login 人，$total_haveNotStart 人未登入";
                 $i = $total_login+$total_haveNotStart-$total;
                 if($i>0) echo "，外来 $i 人";
                 echo "</td>\n<td style='text-align: right'>";
+                echo $MSG_Class;  ?>
+                <select id='class'>
+                    <option value="" <?php if ($_SESSION['class']=="") echo "selected"; ?> ><?php echo $MSG_ALL ?></option>
+                    <option value="null" <?php if ($_SESSION['class']=="null") echo "selected"; ?> >其它</option>
+                    <!-- don't remove "其它" option to for loop, if both null and "null" exist, there will occur two options -->
+                    <?php 
+                    $sz = count($classSet);
+                    for ($i=0; $i<$sz; $i++) {
+                        if ($classSet[$i]==null || $classSet[$i]=="null" || $classSet[$i]=="其它") continue; 
+                    ?>
+                        <option value="<?php echo urlencode($classSet[$i]); ?>" <?php if ($_SESSION['class']==$classSet[$i]) echo "selected"; ?> ><?php echo $classSet[$i]; ?></option>
+                    <?php } ?>
+                </select>
+                 <!-- 选择班级后自动跳转页面的js代码 start -->
+                <script type="text/javascript">
+                var oSelect=document.getElementById("class");
+                oSelect.onchange=function() { //当选项改变时触发
+                    var valOption=this.options[this.selectedIndex].value; //获取option的value
+                    var url = window.location.search;
+                    var cid = <?php echo $cid?>;
+                    var url = window.location.pathname+"?cid="+cid;
+                    url += "&class="+valOption;
+                    window.location.href = url;
+                }
+                </script>
+                <!-- 选择班级后自动跳转页面的js代码 end -->
+                <?php
                 if($is_seat_mode){//座位表模式
                     if(!isset($_SESSION['mode']) || $_SESSION['mode']!="all"){//默认精简模式
                         echo "<label><a style='margin-left: 10px;' title='详细模式' href='./seat_map.php?cid=$cid&mode=all'><span class='am-icon-folder-open-o am-icon-sm'></span></a></label>";

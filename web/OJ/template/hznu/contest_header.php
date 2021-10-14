@@ -106,7 +106,7 @@ if(isset($_GET['cid'])){
   if($contest_time['user_forbid_multiIP_login']==NUll){
     $user_forbid_multiIP_login = 1;
   } else $user_forbid_multiIP_login = $contest_time['user_forbid_multiIP_login']; //是否禁止同一个用户登录到不同的IP(座位)
-  if(!isset($_SESSION['mode']) && (!$seat_forbid_multiUser_login || !$user_forbid_multiIP_login)) $_SESSION['mode']="list";
+  //if(!isset($_SESSION['mode']) && (!$seat_forbid_multiUser_login || !$user_forbid_multiIP_login)) $_SESSION['mode']="list";
   $user_limit = $contest_time['user_limit']=="Y"?1:0;
   $title.="<".$contest_title.">";
 }
