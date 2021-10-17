@@ -194,6 +194,11 @@ if(isset($_GET['del'])) { //删除账号
     $sql.="`seat`='".($seat)."',"
     ."`institute`='".($institute)."' "
     ."WHERE `user_id`='".$user_id."' AND `contest_id`='$contest_id'";
+    $sql2 = "";
+    if($new_contest_id!=$contest_id){
+      $sql2 = "DELETE FROM `privilege` WHERE `user_id`='$user_id' AND `rightstr`='c$contest_id'";
+      $sql3 = "INSERT INTO `privilege`(`user_id`,`rightstr`) VALUES('$user_id','c$new_contest_id')";
+    }
   }
   if ($err_cnt>0){
     print "<script language='javascript'>\n";
@@ -204,8 +209,13 @@ if(isset($_GET['del'])) { //删除账号
   }
   //echo $sql;
   $mysqli->query($sql) or die("Update Error!\n");
-  if ($mysqli->affected_rows > 0) $result="编辑成功！";
-  else $result="No such user or No change!";
+  if ($mysqli->affected_rows > 0) {
+    $result="编辑成功！";
+    if(isset($_POST['team']) && $sql2 != "") {
+      $mysqli->query($sql2);
+      $mysqli->query($sql3);
+    }
+  } else $result="No such user or No change!";
   echo "<script language='javascript'>\n";
   echo "alert('$result');";
 	echo "window.location.href='".generate_url("")."';";
@@ -232,9 +242,15 @@ if(isset($_GET['del'])) { //删除账号
         if($result->num_rows != 0){
           $err_str=$err_str."编号为{$new_contest_id}的{$MSG_CONTEST}中存在同名{$MSG_TEAM}，不能将{$user_id}放入该比赛！\\n";
         } else {
-          $sql = "UPDATE `team` SET `contest_id` = '$new_contest_id' WHERE `user_id`='".$user_id."' AND `contest_id`='$contest_id'";
+          $sql = "UPDATE `team` SET `contest_id` = '$new_contest_id' WHERE `user_id`='$user_id' AND `contest_id`='$contest_id'";
           $mysqli->query($sql);
-          if ($mysqli->affected_rows>0) $cnt++;
+          if ($mysqli->affected_rows>0) {
+            $cnt++;
+            $sql = "DELETE FROM `privilege` WHERE `user_id`='$user_id' AND `rightstr`='c$contest_id'";
+            $mysqli->query($sql);
+            $sql = "INSERT INTO `privilege`(`user_id`,`rightstr`) VALUES('$user_id','c$new_contest_id')";
+            $mysqli->query($sql);
+          }
         }
       }
     }

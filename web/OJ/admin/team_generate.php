@@ -84,6 +84,12 @@ if (isset($_POST['add'])) {
     $sql .= " VALUES('" . $user_id . "','" . $prefix . "','" . $i . "','" . $_SERVER['REMOTE_ADDR'] . "','" . $password . "',NOW(),'" . $nick . "','" . $contest_id . "','" . $class . "','" . $school . "')";
     $sql .= " ON DUPLICATE KEY UPDATE `ip`='" . $_SERVER['REMOTE_ADDR'] . "',`password`='" . $password . "',`reg_time`=now(),nick='" . $nick . "',`school`='" . $school . "',`class`='" . $class . "'";
     $mysqli->query($sql) or die($mysqli->error);
+    if ($mysqli->affected_rows > 0) {
+      $sql = "DELETE FROM `privilege` WHERE `user_id`='$user_id' AND `rightstr` LIKE 'c____'";
+      $mysqli->query($sql);
+      $sql = "INSERT INTO `privilege`(`user_id`,`rightstr`) VALUES('$user_id','c$contest_id')";
+      $mysqli->query($sql);
+    }
   }
 ?>
   <title><?php echo $html_title . $MSG_TEAMGENERATOR ?></title>

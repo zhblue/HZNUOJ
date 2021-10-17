@@ -4,7 +4,7 @@ use jol;
 
 CREATE TABLE IF NOT EXISTS `contest_discuss` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(255) NOT NULL DEFAULT '',
+  `user_id` varchar(48) NOT NULL DEFAULT '',
   `contest_id` int(11) NOT NULL,
   `problem_id` int(11) DEFAULT NULL,
   `content` text,
@@ -68,7 +68,7 @@ INSERT INTO `contest` (`contest_id`, `title`, `start_time`, `end_time`, `defunct
 CREATE TABLE IF NOT EXISTS `contest_excluded_user` (
   `index` int(11) NOT NULL AUTO_INCREMENT,
   `contest_id` int(11) DEFAULT NULL,
-  `user_id` varchar(255) DEFAULT NULL,
+  `user_id` varchar(48) DEFAULT NULL,
   PRIMARY KEY (`index`),
   KEY `contest_id` (`contest_id`,`user_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS `hit_log` (
 
 CREATE TABLE IF NOT EXISTS `loginlog` (
   `index` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(20) NOT NULL DEFAULT '',
+  `user_id` varchar(48) NOT NULL DEFAULT '',
   `password` varchar(40) DEFAULT NULL,
   `ip` varchar(46) DEFAULT NULL,
   `time` datetime DEFAULT NULL,
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS `message` (
   `thread_id` int(11) NOT NULL DEFAULT '0',
   `depth` int(11) NOT NULL DEFAULT '0',
   `orderNum` int(11) NOT NULL DEFAULT '0',
-  `user_id` varchar(20) NOT NULL DEFAULT '',
+  `user_id` varchar(48) NOT NULL DEFAULT '',
   `title` varchar(200) NOT NULL DEFAULT '',
   `content` text,
   `in_date` datetime DEFAULT NULL,
@@ -192,9 +192,10 @@ CREATE TABLE IF NOT EXISTS `privilege` (
   `user_id` char(48) NOT NULL DEFAULT '',
   `rightstr` char(30) NOT NULL DEFAULT '',
   PRIMARY KEY (`index`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
 INSERT INTO `privilege` VALUES (1,'admin','root');
+INSERT INTO `privilege` VALUES (2,'admin','m1000');
 
 CREATE TABLE IF NOT EXISTS `privilege_distribution` (
   `group_name` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',
@@ -358,7 +359,7 @@ INSERT INTO `solution` (`solution_id`, `problem_id`, `user_id`, `time`, `memory`
 CREATE TABLE IF NOT EXISTS `solution_video_watch_log` (
   `index` int(11) NOT NULL AUTO_INCREMENT,
   `video_id` int(11) NOT NULL,
-  `user_id` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
+  `user_id` varchar(48) CHARACTER SET utf8 DEFAULT NULL,
   `time` datetime DEFAULT NULL,
   PRIMARY KEY (`index`),
   KEY `video_id` (`video_id`) USING BTREE
@@ -393,13 +394,13 @@ INSERT INTO `source_code_user` (`solution_id`, `source`) VALUES
 CREATE TABLE IF NOT EXISTS `tag` (
   `index` int(11) NOT NULL AUTO_INCREMENT,
   `problem_id` int(10) unsigned zerofill NOT NULL,
-  `user_id` varchar(100) CHARACTER SET utf8 NOT NULL,
+  `user_id` varchar(48) CHARACTER SET utf8 NOT NULL,
   `tag` varchar(100) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`index`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `team` (
-  `user_id` varchar(30) NOT NULL,
+  `user_id` varchar(48) NOT NULL,
   `prefix` varchar(30) DEFAULT NULL,
   `NO` int(10) DEFAULT NULL,
   `password` varchar(32) NOT NULL,

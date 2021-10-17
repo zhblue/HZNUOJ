@@ -129,6 +129,11 @@ SQL;
 			$mysqli->query($sql);
 			if ($mysqli->affected_rows <= 0) {
 				$report[$key]['status'] = "<font color='red'><b>Fail</b></font>，Unknow Error!";
+			} else {
+				$sql = "DELETE FROM `privilege` WHERE `user_id`='{$user_id[$key]}' AND `rightstr` LIKE 'c____'";
+				$mysqli->query($sql);
+				$sql = "INSERT INTO `privilege`(`user_id`,`rightstr`) VALUES('{$user_id[$key]}','c$cid')";
+				$mysqli->query($sql);
 			}
 		} else $report[$key]['password']=" ";
 	}
