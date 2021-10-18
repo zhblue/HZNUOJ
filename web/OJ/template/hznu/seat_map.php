@@ -177,7 +177,9 @@ function printOtherStu($stu){
                 } else { //列表模式
                     echo "<label><a style='margin-left: 10px;' title='座位表模式' href='./seat_map.php?cid=$cid&mode=lite'><span class='am-icon-table am-icon-sm'></span></a></label>";
                 }
-                echo "</label><a style='margin-left: 10px;' href='seat_map.php?cid=$cid&kickroom=$room_id' title='把所有登入踢出'><span class='am-icon-trash-o am-icon-sm'></span></a>";
+                echo "</label><a style='margin-left: 10px;' href='seat_map.php?cid=$cid&kickroom=$room_id";
+                if($user_limit) echo "&team";
+                echo "' title='把所有登入踢出'><span class='am-icon-trash-o am-icon-sm'></span></a>";
                 echo "</td>";
                 ?>
             </tr></table>

@@ -32,6 +32,10 @@ if($mode!=""){
     $_SESSION['mode']=$mode;
 }
 $is_seat_mode = (!isset($_SESSION['mode']) || $_SESSION['mode']!="list"); //座位表模式
+if(isset($_GET['class'])) {
+    $_SESSION['class'] = $mysqli->real_escape_string($_GET['class']);
+}
+$cls = $_SESSION['class'];
 if(isset($_GET['lock'])){
     $tmp = intval($_GET['lock']);
     $sql ="UPDATE `contest_online` SET `allow_change_seat`= 1-`allow_change_seat` WHERE `contest_id`='$cid' AND `id`='$tmp'";
@@ -42,13 +46,24 @@ if(isset($_GET['lock'])){
     $mysqli->query($sql);
 } else if(isset($_GET['kickroom'])){
     $tmp = intval($_GET['kickroom']);
-    $sql ="UPDATE `contest_online` SET `ip`='0.0.0.0' WHERE `contest_id`='$cid' AND `room_id`='$tmp'";//标记成0.0.0.0的都要踢出机房
+    if($cls==""){
+        $filter="1";
+    } else if($cls=="null"){
+        if(!isset($_GET['team'])) {
+            $filter="`user_id` IN (SELECT u.`user_id` FROM `users` AS u WHERE u.`class`='null' or u.`class` is null or u.class='其它') ";
+        } else {
+            $filter="`user_id` IN (SELECT u.`user_id` FROM `team` AS u WHERE u.`contest_id`='$cid' AND u.`class`='null' or u.`class` is null or u.class='其它') ";
+        }
+    } else {
+        if(!isset($_GET['team'])) {
+            $filter="`user_id` IN (SELECT u.`user_id` FROM `users` AS u WHERE u.`class`='$cls') ";
+        } else {
+            $filter="`user_id` IN (SELECT u.`user_id` FROM `team` AS u WHERE u.`contest_id`='$cid' AND u.`class`='$cls') ";
+        }
+    }
+    $sql ="UPDATE `contest_online` SET `ip`='0.0.0.0' WHERE $filter AND `contest_id`='$cid' AND `room_id`='$tmp'";//标记成0.0.0.0的都要踢出机房
     $mysqli->query($sql);
 }
-if(isset($_GET['class'])) {
-    $_SESSION['class'] = $mysqli->real_escape_string($_GET['class']);
-}
-$cls = $_SESSION['class'];
 switch($cls){
     case "":
         $sql_filter = " WHERE 1 ";
