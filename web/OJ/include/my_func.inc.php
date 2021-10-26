@@ -57,7 +57,7 @@ function formatTimeLength($length)
   //加个语言判断，cn则显示中文时间，其他的都显示英文
   if($OJ_LANG == "cn"){
     $D = '天';
-    $H = '时';
+    $H = '小时';
     $M = '分';
     $S = '秒';
   } else {

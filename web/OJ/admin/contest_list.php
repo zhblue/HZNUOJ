@@ -14,56 +14,7 @@
     exit(1);
   }
   require_once("../include/set_get_key.php"); 
-  function formatTimeLength($length)
-  {
-    $hour = 0;
-    $minute = 0;
-    $second = 0;
-    $result = '';
-    global $OJ_LANG;
-    //加个语言判断，cn则显示中文时间，其他的都显示英文
-    if($OJ_LANG == "cn"){
-      if($length >= 60){
-      $second = $length%60;
-      if($second > 0){ $result = $second.'秒';}
-      $length = floor($length/60);
-      if($length >= 60){
-        $minute = $length%60;
-        if($minute == 0){ if($result != ''){ $result = '0分' . $result;}}
-        else{ $result = $minute.'分'.$result;}
-        $length = floor($length/60);
-        if($length >= 24){
-        $hour = $length%24;
-        if($hour == 0){ if($result != ''){ $result = '0小时' . $result;}}
-        else{ $result = $hour . '小时' . $result;}
-        $length = floor($length / 24);
-        $result = $length . '天' . $result;
-        } else{ $result = $length . '小时' . $result;}
-      } else{ $result = $length . '分' . $result;}
-      } else{ $result = $length . '秒';}
-    } else {
-      if($length >= 60){
-      $second = $length%60;
-      if($second > 0){ $result = $second.' Second'.($second>1?"s":"");}
-      $length = floor($length/60);
-      if($length >= 60){
-        $minute = $length%60;
-        if($minute == 0){ if($result != ''){ $result = '0 Minute' . $result;}}
-        else{ $result = $minute.' Minute'.($length>1?"s":"")." ".$result;}
-        $length = floor($length/60);
-        if($length >= 24){
-        $hour = $length%24;
-        if($hour == 0){ if($result != ''){ $result = '0 Hour' . $result;}}
-        else{ $result = $hour . ' Hour'.($length>1?"s":"")." " . $result;}
-        $length = floor($length / 24);
-        $result = $length . ' Day'.($length>1?"s":"")." " . $result;
-        } else{ $result = $length . ' Hour'.($length>1?"s":"")." " . $result;}
-      } else{ $result = $length . ' Minute'.($length>1?"s":"")." " . $result;}
-      } else{ $result = $length . ' Second'.($length>1?"s":"");}
-    }
-    return $result;
-  }
-
+  require_once('../include/my_func.inc.php');
   $page = 1;
   if(isset($_GET['page'])) $page = intval($_GET['page']);
   if(isset($page)) $args['page']=$page;
@@ -87,7 +38,12 @@ function generate_url($data){
     $keyword=htmlentities(trim($_GET['keyword']));
     $keyword=$mysqli->real_escape_string($keyword);
     $args['keyword']=urlencode($keyword);
-    $sql_filter .= " AND (`title` LIKE '%$keyword%' OR `user_id` LIKE '%$keyword%') ";
+    $tmp = explode("|", $keyword);
+    if(!$tmp[1]) {
+      $sql_filter .= " AND (`title` LIKE '%{$tmp[0]}%' OR `user_id` LIKE '%{$tmp[0]}%') ";
+    } else {
+      $sql_filter .= " AND (`title` LIKE '%{$tmp[0]}%' AND `user_id` LIKE '%{$tmp[1]}%') ";
+    }
   } 
   if(isset($_GET['type']) && trim($_GET['type']) != "" && trim($_GET['type']) != "all") {
     $type = trim($_GET['type']);
@@ -175,7 +131,7 @@ function generate_url($data){
       <option value='Running' <?php if (isset($_GET['runstatus']) && $_GET['runstatus'] == "Running" ) echo "selected"; ?>><?php echo $MSG_Running ?></option>
       <option value='Ended' <?php if (isset($_GET['runstatus']) && $_GET['runstatus'] == "Ended" ) echo "selected"; ?>><?php echo $MSG_Ended ?></option>
   </select>&nbsp;
-  <input class="form-control"  name="keyword" type="text"  placeholder="<?php echo $MSG_KEYWORDS ?>" <?php if(isset($keyword)) echo "value='$keyword'"; ?>/>&nbsp;
+  <input class="form-control"  name="keyword" type="text"  placeholder="<?php echo $MSG_TITLE."|".$MSG_Creator ?>" <?php if(isset($keyword)) echo "value='$keyword'"; ?>/>&nbsp;
   <input class="btn btn-default" type=submit value="<?php echo $MSG_SEARCH?>" >
 </form>
 </div>

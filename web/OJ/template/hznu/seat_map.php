@@ -290,6 +290,7 @@ $.tablesorter.addParser({
             secondPos = t.indexOf("S")
         } else { //中文的时间
             dayPos = t.indexOf("天");
+            t = t.replaceAll("小时","时");
             hourPos = t.indexOf("时");
             minutePos = t.indexOf("分");
             secondPos = t.indexOf("秒");
