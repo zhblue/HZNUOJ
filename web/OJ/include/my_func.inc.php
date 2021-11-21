@@ -238,8 +238,26 @@ function canSeeSource($sid) {
         if ($ok) return true;
     }
     
-    if (isset($_SESSION['user_id'])&&$row && $row->user_id==$_SESSION['user_id']) return true;  // 是本人，可以查看该代码
-    else { // 不是本人的情况下
+    if (isset($_SESSION['user_id'])&&$row && $row->user_id==$_SESSION['user_id']){
+        // 是本人，如果该题还在他的未结束竞赛中时，不能查看以前提交的该题代码
+        $ok = HAS_PRI("see_source_in_contest") || HAS_PRI("see_source_out_of_contest");
+        if(!$ok) {
+            if (is_running(intval($cid))) { // 当前提交属于进行中的比赛，可以看
+                $need_check_using=false;
+            } else if (is_numeric($cid)) {// 当前提交属于已经结束的比赛，考察是否有进行中的比赛在使用该题。
+                $need_check_using=true;
+            } else {// 非比赛提交.考察是否有进行中的比赛在使用该题
+                $need_check_using=true;
+            }
+            // 检查是否使用中
+            if($need_check_using){
+                return ( !$have_other_not_closed);
+            } else {
+                return true;
+            }
+        }
+        return $ok;
+    } else { // 不是本人的情况下
         if (is_running(intval($cid))) { // the problem is in running contest
             if (HAS_PRI("see_source_in_contest")) return true;
             $sql = "SELECT 1 FROM solution WHERE result=4 AND problem_id='$pid' AND contest_id='$cid' AND user_id='".$_SESSION['user_id']."'";
