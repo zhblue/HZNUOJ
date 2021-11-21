@@ -63,7 +63,7 @@ if(isset($_GET['cid'])){
     $contest_endtime=$contest_time['end_time']+intval($contest_time['overTime'])*60;
   } else $contest_endtime=$contest_time['end_time'];
   $contest_len=$contest_endtime-$contest_time['start_time'];
-  if($contest_time['start_by_login_time'] && $user_id2!=""){//记录contest登入时间
+  if($contest_time['start_by_login_time'] && $user_id2!="" && is_running($cid) && !HAS_PRI("edit_contest")){//记录contest登入时间
     $sql = "SELECT `user_id` FROM `solution` WHERE contest_id='$cid' AND `user_id`='$user_id2' LIMIT 1";
     if($mysqli->query($sql)->num_rows==0){//还没提交代码
       $sql = "SELECT `user_id` FROM `contest_loginTime` WHERE contest_id='$cid' AND `user_id`='$user_id2' AND (NOT ISNULL(`startTime`) OR `startTime`='')";

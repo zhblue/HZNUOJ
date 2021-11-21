@@ -217,15 +217,16 @@ function canSeeSource($sid) {
     
     
     $irc = false; // in running contest
+    $have_other_not_closed = false;//该用户还有其他的包含该题的未结束比赛
     $sql = "SELECT DISTINCT(contest_id) AS cid FROM contest_problem WHERE problem_id='$pid'";
     $result = $mysqli->query($sql);
     while ($row_cid = $result->fetch_object()) {
-        if (is_running_and_not_practice($row_cid->cid)) {
+        if (is_running($row_cid->cid)) {
             $irc = true;
-            $sql = "SELECT defunct_TA FROM contest WHERE contest_id='$row_cid->cid'";
-            $result_tmp = $mysqli->query($sql);
-            $row_tmp = $result->fetch_array();
-            $result->free();
+            if(isset($_SESSION['c'.$row_cid->cid]) && $row_cid->cid != $cid){
+                $have_other_not_closed = true;
+                break;
+            }
         }
     }
     /* 判断是否有查看权限 start */
@@ -240,6 +241,7 @@ function canSeeSource($sid) {
     if (isset($_SESSION['user_id'])&&$row && $row->user_id==$_SESSION['user_id']) return true;  // 是本人，可以查看该代码
     else { // 不是本人的情况下
         if (is_running(intval($cid))) { // the problem is in running contest
+            if (HAS_PRI("see_source_in_contest")) return true;
             $sql = "SELECT 1 FROM solution WHERE result=4 AND problem_id='$pid' AND contest_id='$cid' AND user_id='".$_SESSION['user_id']."'";
             $result = $mysqli->query($sql);
             $ok = ($result->num_rows>0);
@@ -249,20 +251,16 @@ function canSeeSource($sid) {
             $open_source = $row->open_source=="Y"?1:0; // 默认值为0
             $practice = $row->practice;
             $result->free();
-            return ( ($ok && $practice && $open_source) || // 已经AC该题目，练习赛未结束时，若开放源代码查看可查看其他人的该题代码
-                HAS_PRI("see_source_in_contest")
-            );
-        }
-        else if (is_numeric($cid)) { // 没有运行中的比赛包含该题则考察该代码是否在已经结束的比赛中
+            return ($ok && $practice && $open_source && isset($_SESSION['c'.$cid])); // 已经AC该题目，练习赛未结束时，若开放源代码查看可查看其他人的该题代码
+        } else if (is_numeric($cid)) { // 当前提交属于已经结束的比赛，考察是否有进行中的比赛在使用该题。
+            if (HAS_PRI("see_source_in_contest")) return true;
             $sql = "SELECT defunct_TA, open_source FROM contest WHERE contest_id='$cid'";
             $result = $mysqli->query($sql);
             $row = $result->fetch_object();
             $open_source = $row->open_source=="Y"?1:0; // 默认值为0
-            $defunct_TA = $row->defunct_TA=="Y"?1:0; // 默认值为0
+            // $defunct_TA = $row->defunct_TA=="Y"?1:0; // 默认值为0
             $result->free();
-            return  ( $open_source || // 比赛已经结束了且开放源代码查看
-                HAS_PRI("see_source_in_contest")
-            );
+            return (!$have_other_not_closed && $open_source && isset($_SESSION['c'.$cid]));// 包含该题所有比赛已经结束，且当前比赛开放源代码查看时，可查看当前比赛其他人的代码
         } else { // 该代码不是在比赛中的
             if (HAS_PRI("see_source_out_of_contest")) return true;
         }
