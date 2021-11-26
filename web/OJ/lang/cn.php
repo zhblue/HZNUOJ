@@ -154,6 +154,12 @@
   $MSG_OverTime = "加时设置";
   $MSG_start_by_login_time = "以用户登入{$MSG_CONTEST}的时间为基准计算{$MSG_PROBLEM}的完成时间（影响排名）";
   $MSG_enable_overtime = "允许以加时方式调整个别账号的{$MSG_CONTEST}结束时间";
+  $MSG_exportScore = "成绩导出";
+  $MSG_ScoreMode = "统计模式";
+  $MSG_OI = "OI模式(部分测试数据通过也得分)";
+  $MSG_ACM = "ACM模式";
+  $MSG_CompletionRate = "完成率";
+
   /*
   下面的代码请不要乱动，以免出问题！！！
   */
@@ -310,6 +316,7 @@
   $MSG_SILVER="银牌数量";
   $MSG_BRONZE="铜牌数量";
   
+  $MSG_HELP_exportScore = "导出指定班级的普通账号（非{$MSG_TEAM}）在各个{$MSG_CONTEST}的答题情况。";
   $MSG_HELP_TeamAccount_forbid = $MSG_TEAM."不能访问此页！";
   $MSG_HELP_TeamAccount_login = "非".$MSG_TEAM."登录勿填！";
   $MSG_HELP_ADD_NEWS="添加首页显示的".$MSG_NEWS."。";

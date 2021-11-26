@@ -154,6 +154,11 @@
   $MSG_OverTime = "Set OverTime";
   $MSG_start_by_login_time = "Calculate the {$MSG_PROBLEM}'s completion time based on user's login time";
   $MSG_enable_overtime = "Enable set overtime to end someone's {$MSG_CONTEST}";
+  $MSG_exportScore = "Score Export";
+  $MSG_ScoreMode = "Statistics Mode";
+  $MSG_OI = "OI Mode";
+  $MSG_ACM = "ACM Mode";
+  $MSG_CompletionRate = "Completion Rate";
 
   /*
   下面的代码请不要乱动，以免出问题！！！
@@ -311,6 +316,7 @@
   $MSG_SILVER="Silver Num";
   $MSG_BRONZE="Bronze Num";
   
+  $MSG_HELP_exportScore = "export the users's score in {$MSG_CONTEST}.(not {$MSG_TEAM})";
   $MSG_HELP_TeamAccount_forbid = "Team account can not use this page!";
   $MSG_HELP_TeamAccount_login = "Don't input if you are not team account!";
   $MSG_HELP_ADD_NEWS="add news for the homepage";

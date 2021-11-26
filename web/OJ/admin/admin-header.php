@@ -141,7 +141,9 @@ sss;
             $html_li .= "<li><a href='$urlbaseDir/team_generate.php'>$MSG_TEAMGENERATOR</a></li>";
             $html_li .= "<li><a href='$urlbaseDir/team_import.php'>$MSG_TEAM$MSG_IMPORT</a></li>";
           }
-            
+          if(HAS_PRI("edit_contest")){
+            $html_li .= "<li><a href='$urlbaseDir/score_export.php'>$MSG_exportScore</a></li>";
+          }
           if($html_li!=""){
             echo<<<sss
             <li class="dropdown">
@@ -221,4 +223,4 @@ sss;
       </div><!-- collapse navbar-collapse -->
     </div>
   </nav>
-  <div class="am-container" style="margin-left: 150px;margin-bottom: 30px;max-width: 1300px;width: 100%;">
+  <div class="am-container" style="margin-left: 150px;margin-bottom: 30px;width: 1300px;width: 100%;">
