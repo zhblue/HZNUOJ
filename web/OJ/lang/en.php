@@ -247,6 +247,7 @@
   $MSG_AddMoreTestData = "Add More Test Data";
   $MSG_EditOK = "Edit OK!";
   $MSG_SeeProblem = "See The Problem!";
+  $MSG_Problem_Locked = "This problem is locked because it's in the following contest(s):";
   
   //admin menu
   $MSG_DASHBOARD = "DASHBOARD";

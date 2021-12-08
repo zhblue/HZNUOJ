@@ -199,12 +199,13 @@ WHERE
   AND contest.start_time < NOW()
   AND contest.end_time > NOW()
   AND contest.practice = 0
+  AND contest.defunct='N'
 ORDER BY `num`
         ";
         //echo $sql;
         $result=$mysqli->query($sql);
         if($i=$result->num_rows){
-            $view_errors.= "<span class='am-text-danger am-block'>This problem is locked because it's in the following contest(s):</span>";
+            $view_errors.= "<span class='am-text-danger am-block'>$MSG_Problem_Locked</span>";
             for (;$i>0;$i--){
                 $row=$result->fetch_row();
                 $view_errors.= "<a href=problem.php?cid=$row[0]&pid=$row[2]>Contest $row[0]: $row[1]</a><br>";

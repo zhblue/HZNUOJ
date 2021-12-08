@@ -95,8 +95,7 @@ function sec2str($sec){
 function is_running($cid){
     require_once("./include/db_info.inc.php");
     global $mysqli;
-    $now=strftime("%Y-%m-%d %H:%M",time());
-    $sql="SELECT count(*) FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<'$now' AND `end_time`>'$now'";
+    $sql="SELECT count(*) FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<NOW() AND `end_time`>NOW() AND `defunct`='N'";
     $result=$mysqli->query($sql);
     $row=$result->fetch_array();
     $cnt=intval($row[0]);
@@ -114,6 +113,7 @@ contest.contest_id = contest_problem.contest_id
 AND contest.start_time < NOW()
 AND contest.end_time > NOW()
 AND contest.practice = 0
+AND contest.defunct='N'
 WHERE contest_problem.problem_id = $pid
 ";
     return $mysqli->query($sql)->num_rows;
@@ -121,8 +121,7 @@ WHERE contest_problem.problem_id = $pid
 function is_running_and_not_practice($cid) {
     require_once("./include/db_info.inc.php");
     global $mysqli;
-    $now=strftime("%Y-%m-%d %H:%M",time());
-    $sql="SELECT count(*) FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<'$now' AND `end_time`>'$now' AND practice = 0";
+    $sql="SELECT count(*) FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<NOW() AND `end_time`>NOW() AND `practice` = 0 AND `defunct`='N'";
     $result=$mysqli->query($sql);
     $row=$result->fetch_array();
     $cnt=intval($row[0]);

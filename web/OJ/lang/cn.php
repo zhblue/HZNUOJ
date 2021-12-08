@@ -247,6 +247,7 @@
   $MSG_AddMoreTestData = "添加更多的样例数据";
   $MSG_EditOK = "编辑完毕！";
   $MSG_SeeProblem = "查看题目！";
+  $MSG_Problem_Locked = "本题已被下列{$MSG_CONTEST}引用，现处于锁定状态，在{$MSG_CONTEST}结束前不能答题:";
 	
   //admin menu
   $MSG_DASHBOARD = "控制面板";
