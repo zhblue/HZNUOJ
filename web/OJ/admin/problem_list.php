@@ -184,7 +184,11 @@
     $keyword=htmlentities(trim($_GET['keyword']));
     $keyword=$mysqli->real_escape_string($keyword);
     $args['keyword']=urlencode($keyword);
-      $sql_filter .= " AND (title like '%$keyword%' or source like '%$keyword%' or author like '%$keyword%' OR tag1 like '%$keyword%' OR tag2 like '%$keyword%' OR tag3 like '%$keyword%')";
+    $sql_filter .= " AND (title like '%$keyword%' or source like '%$keyword%' or author like '%$keyword%'";
+    if(isset($OJ_show_tag) && $OJ_show_tag){
+      $sql_filter .= " OR tag1 like '%$keyword%' OR tag2 like '%$keyword%' OR tag3 like '%$keyword%'";
+    }
+    $sql_filter .= ")";
   }
   $problem_sets = array();
   $result = $mysqli->query("SELECT `set_name`,`set_name_show` FROM `problemset` ORDER BY `set_name_show`");

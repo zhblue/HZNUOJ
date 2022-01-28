@@ -11,7 +11,7 @@
 
 <?php
   require_once("include/db_info.inc.php");
-
+if(isset($OJ_show_tag) && $OJ_show_tag){
   if (isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])) {
     $uid = $_SESSION['user_id'];
     $sql = "SELECT tag FROM users WHERE user_id='$uid'";
@@ -32,5 +32,6 @@
     if ($_SESSION['tag'] == "Y") $_SESSION['tag'] = "N";
     else $_SESSION['tag'] = "Y";
   }
+}
 ?>
 <script language='javascript'>history.go(-1);</script>

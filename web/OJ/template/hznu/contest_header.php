@@ -35,19 +35,21 @@ if(isset($OJ_NEED_LOGIN)&&$OJ_NEED_LOGIN&&(
 /*Count the hit time END*/
 
 $show_tag = false;
-if (isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])) {
-  $uid = $_SESSION['user_id'];
-  $sql = "SELECT tag FROM users WHERE user_id='$uid'";
-  $result = $mysqli->query($sql);
-  $row_h = $result->fetch_array();
-  $result->free();
-  if ($row_h['tag'] == "Y") $show_tag = true;
-} else if (isset($_SESSION['tag'])) {
-  if ($_SESSION['tag'] == "N") $show_tag = false;
-  else $show_tag = true;
+if(isset($OJ_show_tag) && $OJ_show_tag){
+  if (isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])) {
+    $uid = $_SESSION['user_id'];
+    $sql = "SELECT tag FROM users WHERE user_id='$uid'";
+    $result = $mysqli->query($sql);
+    $row_h = $result->fetch_array();
+    $result->free();
+    if ($row_h['tag'] == "Y") $show_tag = true;
+  } else if (isset($_SESSION['tag'])) {
+    if ($_SESSION['tag'] == "N") $show_tag = false;
+    else $show_tag = true;
+  }
+  if ($show_tag) $_SESSION['tag'] = "Y";
+  else $_SESSION['tag'] = "N";
 }
-if ($show_tag) $_SESSION['tag'] = "Y";
-else $_SESSION['tag'] = "N";
 
 if(isset($_GET['cid'])){
   $warnning_percent=90;
@@ -229,8 +231,10 @@ BOT;
             //   echo "<li><a href='./points_rechange.php'><span class='am-icon-credit-card-alt'></span> $MSG_points$MSG_Recharge </a></li>";
             // }
           }
-          if ($show_tag) echo "<li><a href='./changeTag.php'><span class='am-icon-toggle-on'></span> $MSG_HIDETAG</a></li>";
-          else echo "<li><a href='./changeTag.php'><span class='am-icon-toggle-off'></span> $MSG_SHOWTAG</a></li>";
+          if(isset($OJ_show_tag) && $OJ_show_tag){
+            if ($show_tag) echo "<li><a href='./changeTag.php'><span class='am-icon-toggle-on'></span> $MSG_HIDETAG</a></li>";
+            else echo "<li><a href='./changeTag.php'><span class='am-icon-toggle-off'></span> $MSG_SHOWTAG</a></li>";
+           }
           }
 		  echo "<li><a href='./logout.php'><span class='am-icon-reply'></span> $MSG_LOGOUT</a></li>";
           if(HAS_PRI('enter_admin_page')){

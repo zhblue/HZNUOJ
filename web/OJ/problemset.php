@@ -42,21 +42,21 @@ if (isset($_GET['page'])) {
 
 /* 是否显示标签 start */
 $show_tag = false;
-
-if (isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])) {
-    $uid = $_SESSION['user_id'];
-    $sql = "SELECT tag FROM users WHERE user_id='$uid'";
-    $result = $mysqli->query($sql);
-    $row_h = $result->fetch_array();
-    $result->free();
-    if ($row_h['tag'] == "Y") $show_tag = true;
-} else if (isset($_SESSION['tag'])) {
-    if ($_SESSION['tag'] == "N") $show_tag = false;
-    else $show_tag = true;
+if(isset($OJ_show_tag) && $OJ_show_tag){
+    if (isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])) {
+        $uid = $_SESSION['user_id'];
+        $sql = "SELECT tag FROM users WHERE user_id='$uid'";
+        $result = $mysqli->query($sql);
+        $row_h = $result->fetch_array();
+        $result->free();
+        if ($row_h['tag'] == "Y") $show_tag = true;
+    } else if (isset($_SESSION['tag'])) {
+        if ($_SESSION['tag'] == "N") $show_tag = false;
+        else $show_tag = true;
+    }
+    if ($show_tag) $_SESSION['tag'] = "Y";
+    else $_SESSION['tag'] = "N";
 }
-
-if ($show_tag) $_SESSION['tag'] = "Y";
-else $_SESSION['tag'] = "N";
 /* 是否显示标签 end */
 
 
@@ -85,7 +85,11 @@ if (isset($_SESSION['user_id'])) {
 /* 获取sql语句中的筛选部分 start */
 if(isset($_GET['search'])&&trim($_GET['search'])!="") {
     $search=$mysqli->real_escape_string(trim($_GET['search']));
-    $filter_sql="(title like '%$search%' or source like '%$search%' or author like '%$search%' OR tag1 like '%$search%' OR tag2 like '%$search%' OR tag3 like '%$search%')";
+    $filter_sql="(title like '%$search%' or source like '%$search%' or author like '%$search%' ";
+    if(isset($OJ_show_tag) && $OJ_show_tag){
+        $filter_sql.=" OR tag1 like '%$search%' OR tag2 like '%$search%' OR tag3 like '%$search%'";
+    }
+    $filter_sql.=")";
 } else {
     $filter_sql="1";
 }
@@ -193,7 +197,7 @@ while ($row=$result->fetch_object()) {
         $view_problemset[$i][2] .= "color: dimgrey;'><span title='this problem is locked because they are in running contest.'>{$row->title}</span> <i class='am-icon-lock'></i>";
     if(strtolower($row->defunct)=="y") $view_problemset[$i][2] .= " <i class='am-icon-eye-slash'></i>";
     $view_problemset[$i][2] .= "</td>";
-    if ($show_tag) {
+    if (isset($OJ_show_tag) && $OJ_show_tag && $show_tag) {
         $view_problemset[$i][3] = "<td >";
         if($row->tag1) $view_problemset[$i][3] .= "<span class='am-badge am-badge-danger'>".$row->tag1."</span>\n";
         if($row->tag2) $view_problemset[$i][3] .= "<span class='am-badge am-badge-warning'>".$row->tag2."</span>\n";

@@ -68,6 +68,7 @@
   static  $OJ_show_contestSolutionInStatus=false;//是否在状态页面status.php中显示竞赛&作业（contest）中提交的代码,默认关闭显示，中小学适合关闭，配合座位表功能防止学生登录其他账号抄袭
   static  $OJ_login2mycontest=false;//非管理员账号登录后是否跳转到我的比赛&作业，true开启，false关闭，默认关闭跳转，中小学适合开启
   static  $OJ_allow_modify_nick=true;//是否允许普通用户更改自己的昵称，true允许，false不允许，默认允许，中小学适合关闭修改
+  static  $OJ_show_tag=true;//是否显示用题目的用户自定义标签，true显示，false不显示
 
   //积分功能
   static $OJ_points_enable=false;//是否开启积分功能，true开启，false关闭
