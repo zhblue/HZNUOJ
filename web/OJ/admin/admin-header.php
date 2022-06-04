@@ -223,4 +223,4 @@ sss;
       </div><!-- collapse navbar-collapse -->
     </div>
   </nav>
-  <div class="am-container" style="margin-left: 150px;margin-bottom: 30px;width: 1300px;width: 100%;">
+  <div class="am-container" style="margin-left: 150px;margin-bottom: 30px;max-width: 1300px;width: 100%;">
