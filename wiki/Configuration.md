@@ -44,7 +44,11 @@ OJ_HTTP_JUDGE=0            #是否使用HTTP方式连接数据库，如果启用
 
 OJ_HTTP_BASEURL=http://127.0.0.1/JudgeOnline  #使用HTTP方式连接数据库的基础地址，就是OJ的首页地址。
 
-OJ_HTTP_USERNAME=IP        #使用HTTP方式所用的用户帐号（REJUDGE权限），该帐号登录时不能启用VCODE图形验证码，但可以登录成功后启用。
+OJ_HTTP_APIPATH=/admin/problem_judge.php #http judge的判题地址
+
+OJ_HTTP_LOGINPATH=/login.php             #http judge的登录地址
+
+OJ_HTTP_USERNAME=admin     #使用HTTP方式所用的用户帐号（REJUDGE权限），该帐号登录时不能启用VCODE图形验证码，但可以登录成功后启用。
 
 OJ_HTTP_PASSWORD=admin     #密码
 
@@ -71,6 +75,26 @@ OJ_LANG_SET=0,1,2,3,4,5,6,7,8,9,12,13,14,15,17,18
 OJ_COMPILE_CHROOT=1
 
 OJ_TURBO_MODE=0
+
+OJ_CPU_COMPENSATION=1.0     #Bigger setting Slow down time on fast CPU, smaller setting Speed up time on slow CPU
+
+OJ_UDP_ENABLE=1             #Using UDP for submission notification
+
+OJ_UDP_SERVER=127.0.0.1
+
+OJ_UDP_PORT=1536
+
+OJ_PYTHON_FREE=0     #Let Python Free
+
+OJ_COPY_DATA=0       #allow NOIP using data.in as input file
+
+OJ_USE_DOCKER=0      #use docker to contain judge_client
+
+#OJ_CC_STD=-std=c99      #overide C standard
+
+#OJ_CPP_STD=-std=c++17   #overide C++ standard
+
+#OJ_CC_OPT=-O2
 
 OJ_points_enable=1    #是否开启积分功能，1开启，0关闭
 

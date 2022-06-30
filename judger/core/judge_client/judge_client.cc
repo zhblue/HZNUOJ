@@ -1,5 +1,3 @@
-//
-#define IGNORE_ESOL //ignore the ending space char of lines while comparing
 // File:   judge_client.cc
 // Author: sempr
 // refacted by zhblue
@@ -27,6 +25,9 @@
  */
 
 #include <stdio.h>
+#include <syslog.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
@@ -45,34 +46,37 @@
 //#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <mysql/mysql.h>
+#ifdef OJ_USE_MYSQL
+  #include <mysql/mysql.h>
+#endif
 #include <assert.h>
 #include "okcalls.h"
 
+#define IGNORE_ESOL //ignore the ending space char of lines while comparing
 #define STD_MB 1048576LL
 #define STD_T_LIM 2
 #define STD_F_LIM (STD_MB << 5) //default file size limit 32m ,2^5=32
 #define STD_M_LIM (STD_MB << 7) //default memory limit 128m ,2^7=128
 #define BUFFER_SIZE 4096    //default size of char buffer 5120 bytes
+#define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
-#define OJ_WT0 0
-#define OJ_WT1 1
-#define OJ_CI 2
-#define OJ_RI 3
-#define OJ_AC 4
-#define OJ_PE 5
-#define OJ_WA 6
-#define OJ_TL 7
-#define OJ_ML 8
-#define OJ_OL 9
-#define OJ_RE 10
-#define OJ_CE 11
-#define OJ_CO 12
-#define OJ_TR 13
-/*copy from ZOJ
- http://code.google.com/p/zoj/source/browse/trunk/judge_client/client/tracer.cc?spec=svn367&r=367#39
- */
-#ifdef __arm__
+#define OJ_WT0 0     //提交排队
+#define OJ_WT1 1     //重判排队
+#define OJ_CI 2      //编译中（任务已派发）
+#define OJ_RI 3      //运行中
+#define OJ_AC 4      //答案正确
+#define OJ_PE 5      //格式错误
+#define OJ_WA 6      //答案错误
+#define OJ_TL 7      //时间超限
+#define OJ_ML 8      //内存超限
+#define OJ_OL 9      //输出超限
+#define OJ_RE 10     //运行错误
+#define OJ_CE 11     //编译错误
+#define OJ_CO 12     //编译完成
+#define OJ_TR 13     //测试运行结束
+#define OJ_MC 14     // 等待裁判手工确认
+
+#ifdef __arm__             // arm 的寄存器结构
 struct user_regs_struct {
         long uregs[18];
 };
@@ -82,7 +86,7 @@ struct user_regs_struct {
 #define REG_SYSCALL ARM_r7
 #endif
 
-#ifdef __aarch64__
+#ifdef __aarch64__          //arm64的寄存器结构
 #define NT_PRSTATUS  1
 #define NT_ARM_SYSTEM_CALL  0x404
 #define ARM_cpsr  uregs[16]
@@ -109,7 +113,7 @@ struct user_regs_struct {
 
 #endif 
 
-#ifdef __mips__
+#ifdef __mips__                 //mips 龙芯的寄存器结构
   typedef unsigned long long uint64_t;
   struct user_regs_struct{
     uint64_t uregs[38];
@@ -124,14 +128,14 @@ struct user_regs_struct {
 
 #endif
 
-#ifdef __i386
+#ifdef __i386          //32位x86寄存器
 #define REG_SYSCALL orig_eax
 #define REG_RET eax
 #define REG_ARG0 ebx
 #define REG_ARG1 ecx
 #endif
 
-#ifdef __x86_64__
+#ifdef __x86_64__      //64位x86寄存器
 #define REG_SYSCALL orig_rax
 #define REG_RET rax
 #define REG_ARG0 rdi
@@ -140,15 +144,15 @@ struct user_regs_struct {
 #endif
 
 static int DEBUG = 0;
-static char host_name[BUFFER_SIZE/10];
-static char user_name[BUFFER_SIZE/10];
-static char password[BUFFER_SIZE/10];
-static char db_name[BUFFER_SIZE/10];
-static char oj_home[BUFFER_SIZE/10];
-static char data_list[BUFFER_SIZE][BUFFER_SIZE];
-static int data_list_len = 0;
-
-static int port_number;
+static char host_name[BUFFER_SIZE/10];     //数据库服务器地址
+static int port_number;                    //端口
+static char user_name[BUFFER_SIZE/10];     //用户名
+static char password[BUFFER_SIZE/10];      //密码
+static char db_name[BUFFER_SIZE/10];       //库名
+static char oj_home[BUFFER_SIZE/10];       //判题系统主目录
+static char data_list[BUFFER_SIZE][BUFFER_SIZE]; //测试数据列表
+static int data_list_len = 0;                    //列表长度
+static char lock_file[BUFFER_SIZE]="/home/judge/run0/judge_client.pid";     //工作目录锁定文件
 static int max_running;
 static int sleep_time;
 static int java_time_bonus = 5;
@@ -161,10 +165,12 @@ static int full_diff = 0;
 static int use_max_time = 0;
 static int time_limit_to_total= 0;
 static int total_time= 0;
-static int copy_data= 0;
-static int http_judge = 0;
-static char http_baseurl[BUFFER_SIZE/10];
 
+static int http_judge = 0;
+static int copy_data= 0;
+static char http_baseurl[BUFFER_SIZE/10];
+static char http_apipath[BUFFER_SIZE/10];
+static char http_loginpath[BUFFER_SIZE/10];
 static char http_username[BUFFER_SIZE/10];
 static char http_password[BUFFER_SIZE/10];
 static int http_download = 1;
@@ -177,13 +183,19 @@ static int use_ptrace = 1;
 static int compile_chroot = 1;
 static int turbo_mode = 0;
 static int python_free=0;
-static int points_enable=0;
-static double points_AC=1.0;
-static double points_firstAC=1.0;
-static double points_Wrong=0.0;
+static int use_docker=0;
 static const char *tbname = "solution";
+static char cc_opt[BUFFER_SIZE/10];
+static char cc_std[BUFFER_SIZE/10];
+static char cpp_std[BUFFER_SIZE/10];
+static int auto_result = OJ_AC; //2021-9-1hustoj:新增一个OJ_AUTO_RESULT=4,让机器判断结果AC可以被设定为4或者14,4代表正确，14代表机器判断通过，等待人工复核
 int num_of_test = 0;
 //static int sleep_tmp;
+
+static int points_enable=0;
+static double points_AC=1.0;      //提交的代码正确奖励xx个积分
+static double points_firstAC=1.0; //提交的代码第一次AC题目奖励xx个积分
+static double points_Wrong=0.0;   //提交的代码错误扣除xx积分，
 
 static int py2=1; // caution: py2=1 means default using py3
 
@@ -192,10 +204,42 @@ static int py2=1; // caution: py2=1 means default using py3
 #ifdef _mysql_h
 MYSQL *conn;
 #endif
-static char jresult[14][4]={"PD","PR","CI","RJ","AC","PE","WA","TLE","MLE","OLE","RE","CE","CO","TR"};
-static char lang_ext[21][8] = {"c", "cc", "pas", "java", "rb", "sh", "py",
-             "php", "pl", "cs", "m", "bas", "scm", "c", "cc", "lua", "js", "go","sql","f95","m"};
+static char jresult[15][4]={"PD","PR","CI","RJ","AC","PE","WA","TLE","MLE","OLE","RE","CE","CO","TR","MC"};
+static char lang_ext[22][8] = {"c", "cc", "pas", "java", "rb", "sh", "py",
+             "php", "pl", "cs", "m", "bas", "scm", "c", "cc", "lua", "js", "go","sql","f95","m","cob"};
 //static char buf[BUFFER_SIZE];
+
+int lockfile(int fd) {
+  struct flock fl;
+  fl.l_type = F_WRLCK;
+  fl.l_start = 0;
+  fl.l_whence = SEEK_SET;
+  fl.l_len = 0;
+  return (fcntl(fd, F_SETLK, &fl));
+}
+
+int already_running() {
+  int fd;
+  char buf[16];
+  fd = open(lock_file, O_RDWR | O_CREAT, LOCKMODE);
+  if (fd < 0) {
+    if(DEBUG)printf("%s open fail.\n",lock_file);
+    exit(1);
+  }
+  if (lockfile(fd) < 0) {
+    if (errno == EACCES || errno == EAGAIN) {
+      close(fd);
+      return 1;
+    }
+
+    if(DEBUG)printf("%s lock fail.\n",lock_file);
+    exit(1);
+  }
+  if(ftruncate(fd, 0)) printf("close file fail 0 \n");
+  sprintf(buf, "%d", getpid());
+  if(write(fd, buf, strlen(buf) + 1)>=BUFFER_SIZE) printf("buffer size overflow!...\n");
+  return (0);
+}
 void print_arm_regs(long long unsigned int *d){
   for(int i=0;i<32;i++){
     printf("[%d]:%lld ",i,d[i]%CALL_ARRAY_SIZE);
@@ -239,17 +283,17 @@ long get_file_size(const char *filename)
 void write_log(const char *_fmt, ...)
 {
   va_list ap;
-  char fmt[4096];
-  strncpy(fmt, _fmt, 4096);
-  char buffer[4096];
+  char fmt[BUFFER_SIZE];
+  strncpy(fmt, _fmt,BUFFER_SIZE);
+  char buffer[BUFFER_SIZE];
   //      time_t          t = time(NULL);
   //int l;
   sprintf(buffer, "%s/log/client.log", oj_home);
   FILE *fp = fopen(buffer, "ae+");
   if (fp == NULL)
   {
-    fprintf(stderr, "openfile error!\n");
-    system("pwd");
+    fprintf(stderr, "%s/log/client.log openfile error!\n",oj_home);
+    exit(-6);
   }
   va_start(ap, _fmt);
   //l =
@@ -260,7 +304,7 @@ void write_log(const char *_fmt, ...)
   va_end(ap);
   fclose(fp);
 }
-int execute_cmd(const char *fmt, ...)
+int execute_cmd(const char *fmt, ...)   //执行命令获得返回值
 {
   char cmd[BUFFER_SIZE];
 
@@ -279,7 +323,7 @@ const int call_array_size = CALL_ARRAY_SIZE;
 unsigned int call_id = 0;
 int call_counter[call_array_size] = {0};
 static char LANG_NAME[BUFFER_SIZE];
-void init_syscalls_limits(int lang)
+void init_syscalls_limits(int lang)      //白名单初始化
 {
   int i;
   memset(call_counter, 0, sizeof(call_counter));
@@ -292,100 +336,105 @@ void init_syscalls_limits(int lang)
       call_counter[i] = 0;
     }
   }
-  else if (lang <= 1 || lang == 13 || lang == 14)
+  else if (lang <= LANG_CPP || lang == LANG_CLANG || lang == LANG_CLANGPP)
   { // C & C++
     for (i = 0; i == 0 || LANG_CV[i]; i++)
     {
       call_counter[LANG_CV[i]] = HOJ_MAX_LIMIT;
     }
   }
-  else if (lang == 2)
+  else if (lang == LANG_PASCAL)
   { // Pascal
     for (i = 0; i == 0 || LANG_PV[i]; i++)
       call_counter[LANG_PV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 3)
+  else if (lang == LANG_JAVA)
   { // Java
     for (i = 0; i == 0 || LANG_JV[i]; i++)
       call_counter[LANG_JV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 4)
+  else if (lang == LANG_RUBY)
   { // Ruby
     for (i = 0; i == 0 || LANG_RV[i]; i++)
       call_counter[LANG_RV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 5)
+  else if (lang == LANG_BASH)
   { // Bash
     for (i = 0; i == 0 || LANG_BV[i]; i++)
       call_counter[LANG_BV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 6)
+  else if (lang == LANG_PYTHON)
   { // Python
     for (i = 0; i == 0 || LANG_YV[i]; i++)
       call_counter[LANG_YV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 7)
+  else if (lang == LANG_PHP)
   { // php
     for (i = 0; i == 0 || LANG_PHV[i]; i++)
       call_counter[LANG_PHV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 8)
+  else if (lang == LANG_PERL)
   { // perl
     for (i = 0; i == 0 || LANG_PLV[i]; i++)
       call_counter[LANG_PLV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 9)
+  else if (lang == LANG_CSHARP)
   { // mono c#
     for (i = 0; i == 0 || LANG_CSV[i]; i++)
       call_counter[LANG_CSV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 10)
+  else if (lang == LANG_OBJC)
   { //objective c
     for (i = 0; i == 0 || LANG_OV[i]; i++)
       call_counter[LANG_OV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 11)
+  else if (lang == LANG_FREEBASIC)
   { //free basic
     for (i = 0; i == 0 || LANG_BASICV[i]; i++)
       call_counter[LANG_BASICV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 12)
+  else if (lang == LANG_SCHEME)
   { //scheme guile
     for (i = 0; i == 0 || LANG_SV[i]; i++)
       call_counter[LANG_SV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 15)
+  else if (lang == LANG_LUA)
   { //lua
     for (i = 0; i == 0 || LANG_LUAV[i]; i++)
       call_counter[LANG_LUAV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 16)
+  else if (lang == LANG_JS)
   { //nodejs
     for (i = 0; i == 0 || LANG_JSV[i]; i++)
       call_counter[LANG_JSV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 17)
+  else if (lang == LANG_GO)
   { //go
     for (i = 0; i == 0 || LANG_GOV[i]; i++)
       call_counter[LANG_GOV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 18)
+  else if (lang == LANG_SQL)
   { //SQL(sqlite3)
     for (i = 0; i == 0 || LANG_SQLV[i]; i++)
       call_counter[LANG_SQLV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 19)
+  else if (lang == LANG_FORTRAN)
   { //Fortran
     for (i = 0; i == 0 || LANG_FV[i]; i++)
       call_counter[LANG_FV[i]] = HOJ_MAX_LIMIT;
   }
-  else if (lang == 20 )
+  else if (lang == LANG_MATLAB )
   { //Matlab(Octave)
     for (i = 0; i == 0 || LANG_MV[i]; i++)
       call_counter[LANG_MV[i]] = HOJ_MAX_LIMIT;
   }
+  else if (lang == LANG_COBOL )
+	{ //cobol
+		for (i = 0; i == 0 || LANG_CBV[i]; i++)
+			call_counter[LANG_CBV[i]] = HOJ_MAX_LIMIT;
+	}
 #ifdef __aarch64__
-  if (lang==3)call_counter[220]= 100;
+  if (lang == LANG_JAVA)call_counter[220]= 100;
   else call_counter[220]= 1;
 #else
   call_counter[SYS_execve %  call_array_size ]= 1;
@@ -430,14 +479,14 @@ void read_double(char *buf, const char *key, double *value)
 {
   char buf2[BUFFER_SIZE];
   if (read_buf(buf, key, buf2))
-    sscanf(buf2, "%lf", value);
+    if(1!=sscanf(buf2, "%lf", value)) printf("double value read fail\n");
 }
 
 void read_int(char *buf, const char *key, int *value)
 {
   char buf2[BUFFER_SIZE];
   if (read_buf(buf, key, buf2))
-    sscanf(buf2, "%d", value);
+    if(1!=sscanf(buf2, "%d", value)) printf("int value read fail\n");
 }
 
 FILE *read_cmd_output(const char *fmt, ...)
@@ -457,7 +506,7 @@ FILE *read_cmd_output(const char *fmt, ...)
   return ret;
 }
 // read the configue file
-void init_mysql_conf()
+void init_judge_conf()   //读取判题主目录etc中的配置文件judge.conf
 {
   FILE *fp = NULL;
   char buf[BUFFER_SIZE];
@@ -470,6 +519,16 @@ void init_mysql_conf()
   sleep_time = 3;
   strcpy(java_xms, "-Xms32m");
   strcpy(java_xmx, "-Xmx256m");
+  strcpy(cc_std,"-std=c99");
+  strcpy(cc_opt,"-O2");
+  if(__GNUC__ > 9 || (  __GNUC__ == 9 &&  __GNUC_MINOR__ >= 3 ) ){ 
+    // ubuntu20.04 introduce g++9.3
+    strcpy(cc_std,"-std=c17");
+    strcpy(cpp_std,"-std=c++14");    // CCF NOI change settings for NOIP to C++14 on 2021-9-1
+  }else{
+    strcpy(cc_std,"-std=c99");
+    strcpy(cpp_std,"-std=c++11");
+  }
   sprintf(buf, "%s/etc/judge.conf", oj_home);
   fp = fopen("./etc/judge.conf", "re");
   if (fp != NULL)
@@ -488,20 +547,28 @@ void init_mysql_conf()
       read_buf(buf, "OJ_JAVA_XMX", java_xmx);
       read_int(buf, "OJ_HTTP_JUDGE", &http_judge);
       read_buf(buf, "OJ_HTTP_BASEURL", http_baseurl);
+      read_buf(buf, "OJ_HTTP_APIPATH", http_apipath);
+      read_buf(buf, "OJ_HTTP_LOGINPATH", http_loginpath);
       read_buf(buf, "OJ_HTTP_USERNAME", http_username);
       read_buf(buf, "OJ_HTTP_PASSWORD", http_password);
+      read_int(buf, "OJ_HTTP_DOWNLOAD", &http_download);
       read_int(buf, "OJ_OI_MODE", &oi_mode);
       read_int(buf, "OJ_FULL_DIFF", &full_diff);
       read_int(buf, "OJ_SHM_RUN", &shm_run);
       read_int(buf, "OJ_USE_MAX_TIME", &use_max_time);
+      read_int(buf, "OJ_TIME_LIMIT_TO_TOTAL", &time_limit_to_total);
       read_int(buf, "OJ_USE_PTRACE", &use_ptrace);
       read_int(buf, "OJ_COMPILE_CHROOT", &compile_chroot);
       read_int(buf, "OJ_TURBO_MODE", &turbo_mode);
       read_double(buf, "OJ_CPU_COMPENSATION", &cpu_compensation);
       read_int(buf, "OJ_PYTHON_FREE", &python_free);
       read_int(buf, "OJ_COPY_DATA", &copy_data);
-      read_int(buf, "OJ_HTTP_DOWNLOAD", &http_download);
-      read_int(buf, "OJ_TIME_LIMIT_TO_TOTAL", &time_limit_to_total);
+      read_int(buf, "OJ_USE_DOCKER",&use_docker);
+      read_buf(buf, "OJ_CC_STD", cc_std);
+      read_buf(buf, "OJ_CPP_STD", cpp_std);
+      read_buf(buf, "OJ_CC_OPT", cc_opt);
+      read_int(buf, "OJ_AUTO_RESULT", &auto_result);
+
       read_int(buf, "OJ_points_enable", &points_enable);
       read_double(buf, "OJ_points_AC", &points_AC);
       read_double(buf, "OJ_points_firstAC", &points_firstAC);
@@ -509,18 +576,15 @@ void init_mysql_conf()
     }
     fclose(fp);
   }
-  //	fclose(fp);
-
-  if (strcmp(http_username, "IP") == 0)
-  {
-    FILE *fjobs = read_cmd_output("ifconfig|grep 'inet'|awk -F: '{printf $2}'|awk  '{printf $1}'");
-    fscanf(fjobs, "%s", http_username);
+  //  fclose(fp);
+  if(use_docker)shm_run=0;
+  if(strcmp(http_username,"IP")==0){
+    FILE * fjobs = read_cmd_output("ifconfig|grep 'inet'|awk -F: '{printf $2}'|awk  '{printf $1}'");
+    if(1!=fscanf(fjobs, "%s", http_username)) printf("IP read fail...\n");
     pclose(fjobs);
   }
-  if (turbo_mode == 2)
-    tbname = "solution2";
+  if(turbo_mode==2) tbname="solution2";
 }
-
 int isInFile(const char fname[])
 {
   int l = strlen(fname);
@@ -529,7 +593,14 @@ int isInFile(const char fname[])
   else
     return l - 3;
 }
-
+int inFile(const struct dirent * dp){   //获得测试数据目录中测试数据列表
+  int l = strlen(dp->d_name);
+  if(DEBUG) printf("file name:%s\n",dp->d_name);
+  if(DEBUG) printf("ext name:%s\n",dp->d_name + l - 3);
+  int ret = isInFile(dp->d_name);  
+  if(DEBUG) printf("\t:%d\n",ret);
+  return ret;
+}
 void find_next_nonspace(int &c1, int &c2, FILE *&f1, FILE *&f2, int &ret)
 {
   // Find the next non-space character or \n.
@@ -601,7 +672,6 @@ void find_next_nonspace(int &c1, int &c2, FILE *&f1, FILE *&f2, int &ret)
  int p=system(diff);
  if (p) return OJ_PE;
  else return OJ_AC;
-
  }
  */
 const char *getFileNameFromPath(const char *path)
@@ -616,22 +686,21 @@ const char *getFileNameFromPath(const char *path)
 
 void make_diff_out_full(FILE *f1, FILE *f2, int c1, int c2, const char *path,const char * infile)
 {
-
   execute_cmd("echo '========[%s]========='>>diff.out", getFileNameFromPath(path));
-  execute_cmd("echo '------test in top 100 lines------'>>diff.out");
+  execute_cmd("echo '------test in top 100 lines------'>>diff.out");//如果不换行加个-e参数：("echo -e '\\n------test in top 100 lines------'>>diff.out");下同
   execute_cmd("head -100 %s >>diff.out",infile);
-  execute_cmd("echo '------test out top 100 lines-----'>>diff.out");
+  execute_cmd("echo '\n------test out top 100 lines-----'>>diff.out");
   execute_cmd("head -100 '%s'>>diff.out", path);
-  execute_cmd("echo '------user out top 100 lines-----'>>diff.out");
+  execute_cmd("echo '\n------user out top 100 lines-----'>>diff.out");
   execute_cmd("head -100 user.out>>diff.out");
-  execute_cmd("echo '------diff out 200 lines-----'>>diff.out");
-  execute_cmd("diff '%s' user.out -y|head -200>>diff.out", path);
-  execute_cmd("echo '=============================='>>diff.out");
+  execute_cmd("echo '\n------diff out 200 lines-----'>>diff.out");
+  execute_cmd("diff '%s' user.out -y|grep \\||head -200>>diff.out", path);
+  execute_cmd("echo '\n=============================='>>diff.out");
 }
 void make_diff_out_simple(FILE *f1, FILE *f2, int c1, int c2, const char *path)
 {
   execute_cmd("echo '========[%s]========='>>diff.out", getFileNameFromPath(path));
-  execute_cmd("echo 'Expected                  |  Yours'>>diff.out");
+  execute_cmd("echo 'Expected						      |	Yours'>>diff.out");
   execute_cmd("diff '%s' user.out -y|head -100>>diff.out", path);
   execute_cmd("echo '\n=============================='>>diff.out");
 }
@@ -639,7 +708,7 @@ void make_diff_out_simple(FILE *f1, FILE *f2, int c1, int c2, const char *path)
 /*
  * translated from ZOJ judger r367
  * http://code.google.com/p/zoj/source/browse/trunk/judge_client/client/text_checker.cc#25
- *
+ * 参考zoj的文件流式比较器，有更低的内存占用
  */
 int compare_zoj(const char *file1, const char *file2,const char * infile)
 {
@@ -674,8 +743,7 @@ int compare_zoj(const char *file1, const char *file2,const char * infile)
           {
             break;
           }
-          if (c1 != c2)
-          {
+          if (c1 != c2) {
             // Consecutive non-space characters should be all exactly the ifconfig|grep 'inet'|awk -F: '{printf $2}'|awk  '{printf $1}'same
             ret = OJ_WA;
             goto end;
@@ -730,7 +798,7 @@ int compare(const char *file1, const char *file2, const char * infile)
   return compare_zoj(file1, file2,infile);
 #endif
 #ifndef ZOJ_COM
-  //the original compare from the first version of hustoj has file size limit
+  //the original compare from the first version of hustoj has file size limit  原始的内存中比较，速度更快但耗用更多内存
   //and waste memory
   FILE *f1, *f2;
   char *s1, *s2, *p1, *p2;
@@ -783,25 +851,25 @@ int compare(const char *file1, const char *file2, const char * infile)
 #endif
 }
 
-bool check_login()
+bool check_login()   // http模式中检测是否已经登录
 {
   const char *cmd =
-      " wget --post-data=\"checklogin=1\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
+      " wget --post-data=\"checklogin=1\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
   int ret = 0;
-  FILE *fjobs = read_cmd_output(cmd, http_baseurl);
-  fscanf(fjobs, "%d", &ret);
+  FILE *fjobs = read_cmd_output(cmd, http_baseurl, http_apipath);
+  if(1!=fscanf(fjobs, "%d", &ret)) printf("http login fail..");
   pclose(fjobs);
 
   return ret;
 }
-void login()
+void login()  //http登录
 {
   if (!check_login())
   {
     const char *cmd =
-        "wget --post-data=\"user_id=%s&password=%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/login.php\"";
+        "wget --post-data=\"user_id=%s&password=%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
     FILE *fjobs = read_cmd_output(cmd, http_username, http_password,
-                                  http_baseurl);
+                                  http_baseurl, http_loginpath);
     //fscanf(fjobs,"%d",&ret);
     pclose(fjobs);
   }
@@ -815,7 +883,8 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
   char judger[BUFFER_SIZE/10];
   mysql_real_escape_string(conn, judger, http_username, strlen(http_username));
 
-  if(points_enable==1 && result >=4){
+//**************lixun******************start
+  if(points_enable==1 && result >= OJ_AC){ //积分功能，result >= OJ_AC说明已完成判题
     MYSQL_RES *res;
     MYSQL_ROW row;
     sprintf(sql,"SELECT lastresult,problem_id,user_id,contest_id,num FROM %s WHERE solution_id=%d ", tbname, solution_id);
@@ -859,11 +928,11 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
         row = mysql_fetch_row(res);
         int AC_already = atoi(row[0]);
         //计算积分 pay_type  0 提交代码扣积分，1 加奖励积分， 2 扣惩罚扣分， 3 其他人工处理加减积分
-        if (lastresult==0){//新提交代码
-          if(result!=4){ //新交代码是错的
+        if (lastresult == 0){//新提交代码
+          if(result != OJ_AC){ //新交代码是错的
             points_pay = -points_Wrong;
             //插入积分日志
-            if(points_pay!=0){
+            if(points_pay != 0){
               if(contest_id > 0){
                 sprintf(plog, "<a href=\"showsource.php?id=%d\" target=\"_blank\">代码错误-%d(%d-%s)</a>", solution_id, problem_id, contest_id, cpid);
               } else {
@@ -873,13 +942,13 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
               mysql_real_query(conn, sql, strlen(sql));
             }
           } else { //新交代码是对的
-            if(AC_already==0){
+            if(AC_already == 0){
                 points_pay = points_firstAC;
             } else {
                 points_pay = points_AC;
             }
             //插入积分日志
-            if(points_pay!=0){
+            if(points_pay != 0){
               if(contest_id > 0){
                 sprintf(plog, "<a href=\"showsource.php?id=%d\" target=\"_blank\">代码正确-%d(%d-%s)</a>", solution_id, problem_id, contest_id, cpid);
               } else {
@@ -890,7 +959,7 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
             }
           }
         } else {//老代码重判
-          if(lastresult==4 && result!=4){
+          if(lastresult == OJ_AC && result != OJ_AC){
             points_pay = -points_Wrong;//扣惩罚积分
             //插入积分日志
             if(points_pay!=0){
@@ -911,14 +980,14 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
               sprintf(sql,"DELETE FROM `points_log` WHERE `index`=%d", atoi(row[1]));
               mysql_real_query(conn, sql, strlen(sql));
             }
-          } else if(lastresult!=4 && result==4){
-            if(AC_already==0){//加奖励积分
+          } else if(lastresult != OJ_AC && result == OJ_AC){
+            if(AC_already == 0){//加奖励积分
               points_pay = points_firstAC;
             } else {
               points_pay = points_AC;
             }
             //插入积分日志
-            if(points_pay!=0){
+            if(points_pay != 0){
               if(contest_id > 0){
                 sprintf(plog, "<a href=\"showsource.php?id=%d\" target=\"_blank\">重判，代码正确-%d(%d-%s)</a>", solution_id, problem_id, contest_id, cpid);
               } else {
@@ -944,8 +1013,8 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
         }
       }
     }
-  } 
-  if ( result >= 4){
+  }
+  if (result >= OJ_AC){ //结果>=4(OJ_AC)的情况下记录lastresult
     if (oi_mode)
     {
       sprintf(sql,
@@ -959,14 +1028,12 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
               tbname, result, time, memory,judger, result, solution_id);
     }
   } else
-  if (oi_mode)
-  {
+//**************lixun******************end
+  if (oi_mode) {
     sprintf(sql,
             "UPDATE %s SET result=%d,time=%d,memory=%d,pass_rate=%f,judger='%s',judgetime=now() WHERE solution_id=%d ",
             tbname, result, time, memory, pass_rate,  judger, solution_id);
-  }
-  else
-  {
+  } else {
     sprintf(sql,
             "UPDATE %s SET result=%d,time=%d,memory=%d,judger='%s',judgetime=now() WHERE solution_id=%d ",
             tbname, result, time, memory,judger, solution_id);
@@ -1001,9 +1068,9 @@ void _update_solution_http(int solution_id, int result, int time, int memory,
                            int sim, int sim_s_id, double pass_rate)
 {
   const char *cmd =
-      " wget --post-data=\"update_solution=1&sid=%d&result=%d&time=%d&memory=%d&sim=%d&simid=%d&pass_rate=%f\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
+      " wget --post-data=\"update_solution=1&sid=%d&result=%d&time=%d&memory=%d&sim=%d&simid=%d&pass_rate=%f\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
   FILE *fjobs = read_cmd_output(cmd, solution_id, result, time, memory, sim,
-                                sim_s_id, pass_rate, http_baseurl);
+                                sim_s_id, pass_rate, http_baseurl, http_apipath);
   //fscanf(fjobs,"%d",&ret);
   pclose(fjobs);
 }
@@ -1012,6 +1079,8 @@ void update_solution(int solution_id, int result, int time, int memory, int sim,
 {
   if (result == OJ_TL && memory == 0)
     result = OJ_ML;
+  if (result == OJ_AC )
+    result=auto_result;
   if (http_judge)
   {
     _update_solution_http(solution_id, result, time, memory, sim, sim_s_id,
@@ -1040,7 +1109,7 @@ void _addceinfo_mysql(int solution_id)
   while (fgets(cend, 1024, fp))
   {
     cend += strlen(cend);
-    if (cend - ceinfo > 40000)
+    if (cend - ceinfo > 16384)
       break;
   }
   *cend = '\0';
@@ -1078,6 +1147,7 @@ char to_hex(char code)
 
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
+// 用url编码字符串
 char *url_encode(char *str)
 {
   char *pstr = str, *buf = (char *)malloc(strlen(str) * 3 + 1), *pbuf = buf;
@@ -1106,7 +1176,7 @@ void _addceinfo_http(int solution_id)
   while (fgets(cend, 1024, fp))
   {
     cend += strlen(cend);
-    if (cend - ceinfo > 40000)
+    if (cend - ceinfo > 16384)
       break;
   }
   *cend='\0';
@@ -1118,8 +1188,8 @@ void _addceinfo_http(int solution_id)
   free(ceinfo_encode);
 
   const char *cmd =
-      " wget --post-file=\"ce.post\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *fjobs = read_cmd_output(cmd, http_baseurl);
+      " wget --post-file=\"ce.post\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *fjobs = read_cmd_output(cmd, http_baseurl, http_apipath);
   //fscanf(fjobs,"%d",&ret);
   pclose(fjobs);
 }
@@ -1151,7 +1221,7 @@ void _addreinfo_mysql(int solution_id, const char *filename)
   while (fgets(rend, 1024, fp))
   {
     rend += strlen(rend);
-    if (rend - reinfo > 40000)
+    if (rend - reinfo > 16384)
       break;
   }
   *rend = '\0';
@@ -1184,7 +1254,7 @@ void _addreinfo_http(int solution_id, const char *filename)
   while (fgets(rend, 1024, fp))
   {
     rend += strlen(rend);
-    if (rend - reinfo > 40000)
+    if (rend - reinfo > 16384)
       break;
   }
   *rend = '\0';
@@ -1196,8 +1266,8 @@ void _addreinfo_http(int solution_id, const char *filename)
   free(reinfo_encode);
 
   const char *cmd =
-      " wget --post-file=\"re.post\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *fjobs = read_cmd_output(cmd, http_baseurl);
+      " wget --post-file=\"re.post\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *fjobs = read_cmd_output(cmd, http_baseurl, http_apipath);
   //fscanf(fjobs,"%d",&ret);
   pclose(fjobs);
 }
@@ -1264,8 +1334,8 @@ void _update_user_http(char *user_id)
 {
 
   const char *cmd =
-      " wget --post-data=\"updateuser=1&user_id=%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *fjobs = read_cmd_output(cmd, user_id, http_baseurl);
+      " wget --post-data=\"updateuser=1&user_id=%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *fjobs = read_cmd_output(cmd, user_id, http_baseurl, http_apipath);
   //fscanf(fjobs,"%d",&ret);
   pclose(fjobs);
 }
@@ -1284,18 +1354,16 @@ void update_user(char *user_id)
   }
 }
 
-void _update_problem_http(int pid,int cid)
-{
-  const char *cmd =
-      " wget --post-data=\"updateproblem=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *fjobs = read_cmd_output(cmd, pid, http_baseurl);
+void _update_problem_http(int pid,int cid) {
+  const char * cmd =
+      " wget --post-data=\"updateproblem=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE * fjobs = read_cmd_output(cmd, pid, http_baseurl, http_apipath);
   //fscanf(fjobs,"%d",&ret);
   pclose(fjobs);
 }
 
 #ifdef _mysql_h
-void _update_problem_mysql(int p_id,int cid)
-{
+void _update_problem_mysql(int p_id,int cid) {
   char sql[BUFFER_SIZE];
   if(cid>0){ //contest_problem表中增加c_accepted字段，提高竞赛/作业中每道题AC数的查询效率
     sprintf(sql,
@@ -1312,7 +1380,6 @@ void _update_problem_mysql(int p_id,int cid)
     printf("sql:[%s]\n",sql);
   if (mysql_real_query(conn, sql, strlen(sql)))
     write_log(mysql_error(conn));
-
   if(cid>0){//contest_problem表中增加c_submit字段，提高竞赛/作业中每道题提交数的查询效率
     sprintf(sql,
       "UPDATE `contest_problem` SET `c_submit`=(SELECT count(*) FROM `solution` WHERE `problem_id`=%d AND  contest_id=%d) WHERE `problem_id`=%d and contest_id=%d",
@@ -1326,6 +1393,7 @@ void _update_problem_mysql(int p_id,int cid)
       p_id, p_id);
   if (mysql_real_query(conn, sql, strlen(sql)))
     write_log(mysql_error(conn));
+//**************lixun******************start
   //动态计算题目分值 start
   MYSQL_RES *res;
   MYSQL_ROW row;
@@ -1368,48 +1436,48 @@ void _update_problem_mysql(int p_id,int cid)
   if (mysql_real_query(conn, sql, strlen(sql)))
     write_log(mysql_error(conn));
   //动态计算题目分值 end
+//**************lixun******************end
 }
 #endif
-void update_problem(int pid,int cid)
-{
-  if (http_judge)
-  {
+void update_problem(int pid,int cid) {
+  if (http_judge) {
     _update_problem_http(pid,cid);
-  }
-  else
-  {
+  } else {
 #ifdef _mysql_h
     _update_problem_mysql(pid,cid);
 #endif
   }
 }
-void umount(char *work_dir)
+void umount(char *work_dir)  //清理可能存在的热加载目录
 {
-  execute_cmd("/bin/umount -f %s/proc 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/dev 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/lib 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/lib64 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/etc/alternatives 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/usr 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/bin 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/proc 2>/dev/null", work_dir);
-  chdir(work_dir);
-  //execute_cmd("/bin/umount -f bin usr lib lib64 etc/alternatives proc dev 2>/dev/null");
-  execute_cmd("/bin/umount -f %s/* 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/log/* 2>/dev/null", work_dir);
-  execute_cmd("/bin/umount -f %s/log/etc/alternatives 2>/dev/null", work_dir);
+  if(chdir(work_dir)) exit(-1);
+  execute_cmd("/bin/umount -l %s/usr 2>/dev/null", work_dir);
+  if(strlen(work_dir)>0){
+    execute_cmd("/bin/umount -l %s/proc 2>/dev/null", work_dir);
+  }
+  execute_cmd("/bin/umount -l %s/dev 2>/dev/null", work_dir);
+  execute_cmd("/bin/umount -l %s/usr 2>/dev/null", work_dir);
+  execute_cmd("/bin/umount -l usr dev");
+  execute_cmd("/bin/umount -l lib lib64");
+  execute_cmd("/bin/rmdir %s/* ", work_dir);
+  execute_cmd("/bin/rmdir %s/log/* ", work_dir);
 }
 int compile(int lang, char *work_dir)
 {
-  if( lang == 16 ) return 0; // python / js don't compile if( lang == 6 || lang == 16 )
+  if( lang == LANG_JS ) return 0; // python / js don't compile if( lang == LANG_PYTHON || lang == LANG_JS )
   int pid;
+  char fmax_errors[BUFFER_SIZE];
+  if(__GNUC__ > 4 || (  __GNUC__ == 4 &&  __GNUC_MINOR__ >= 8 ) ){
+    sprintf(fmax_errors,"-fmax-errors=10");
+  }else{
+    sprintf(fmax_errors,"-Wformat");
+  }
+  const char *CP_C[] = {"gcc", "-fno-asm", cc_opt , fmax_errors , cc_std ,
+                        "-Wall",        "--static", "-DONLINE_JUDGE", "-o", "Main", "Main.c", "-lm", NULL};    // 看起来别扭，但是gcc非要-lm选项在Main.c后面才认
+  const char *CP_X[] = {"g++", "-fno-asm", cc_opt , fmax_errors , cpp_std ,
+                        "-Wall", "-lm", "--static", "-DONLINE_JUDGE", "-o", "Main", "Main.cc", NULL};
 
-  const char *CP_C[] = {"gcc", "Main.c", "-o", "Main", "-O2", "-fmax-errors=10", "-Wall",
-                        "-lm", "--static", "-std=c99", "-DONLINE_JUDGE", NULL};
-  const char *CP_X[] = {"g++", "-fno-asm", "-fmax-errors=10", "-Wall",
-                        "-lm", "--static", "-std=c++11", "-DONLINE_JUDGE", "-o", "Main", "Main.cc", NULL};
-  const char *CP_P[] =
-      {"fpc", "Main.pas", "-Cs32000000", "-Sh", "-O2", "-Co", "-Ct", "-Ci", NULL};
+  const char *CP_P[] = {"fpc", "Main.pas", "-Cs32000000", "-Sh", "-O2", "-Co", "-Ct", "-Ci", NULL};
   // const char * CP_J[] = { "javac", "-J-Xms32m", "-J-Xmx256m","-encoding","UTF-8", "Main.java",NULL };
 
   const char *CP_R[] = {"ruby", "-c", "Main.rb", NULL};
@@ -1432,7 +1500,15 @@ int compile(int lang, char *work_dir)
   //const char * CP_JS[] = { "js24","-c", "Main.js", NULL };
   const char *CP_GO[] = {"go", "build", "-o", "Main", "Main.go", NULL};
   const char *CP_FORTRAN[] = {"f95", "-static", "-o", "Main", "Main.f95", NULL};
+  const char *CP_COBOL[] = {"cobc","-x", "-static", "-o", "Main", "Main.cob", NULL};
 
+  char * const envp[]={
+    (char * const )"PYTHONIOENCODING=utf-8",
+    (char * const )"USER=judge",
+    (char * const )"GOCACHE=/tmp",
+    (char * const )"LANG=zh_CN.UTF-8",
+    (char * const )"LANGUAGE=zh_CN.UTF-8",
+    (char * const )"LC_ALL=zh_CN.utf-8",NULL};
   char javac_buf[7][32];
   char *CP_J[7];
 
@@ -1451,18 +1527,19 @@ int compile(int lang, char *work_dir)
   if (pid == 0)
   {
     struct rlimit LIM;
-    int cpu = 20;
-    if (lang == 3)
-      cpu = 30;
+    int cpu = 50;
+    if (lang == LANG_JAVA)
+      cpu = 60;
     LIM.rlim_max = cpu;
     LIM.rlim_cur = cpu;
     setrlimit(RLIMIT_CPU, &LIM);
-    alarm(cpu);
-    LIM.rlim_max = 100 * STD_MB;
-    LIM.rlim_cur = 100 * STD_MB;
+    alarm(0);
+    if(cpu>0)alarm(cpu);else alarm(1);
+    LIM.rlim_max = 500 * STD_MB;
+    LIM.rlim_cur = 500 * STD_MB;
     setrlimit(RLIMIT_FSIZE, &LIM);
 
-    if (lang == 3 || lang == 17)
+    if (lang == LANG_PASCAL || lang == LANG_JAVA || lang == LANG_GO)
     {
 #ifdef __mips__
       LIM.rlim_max = STD_MB << 12;
@@ -1486,44 +1563,44 @@ int compile(int lang, char *work_dir)
       LIM.rlim_max = STD_MB << 11 ;
       LIM.rlim_cur = STD_MB << 11;
     }
-    if (lang != 3) setrlimit(RLIMIT_AS, &LIM);
-    if (lang != 2 && lang != 11)
+    if (lang != LANG_JAVA) setrlimit(RLIMIT_AS, &LIM);
+    if (lang != LANG_PASCAL && lang != LANG_FREEBASIC)
     {
-      freopen("ce.txt", "w", stderr);
+      stderr=freopen("ce.txt", "w", stderr);
       //freopen("/dev/null", "w", stdout);
     }
     else
     {
-      freopen("ce.txt", "w", stdout);
+      stdout=freopen("ce.txt", "w", stdout);
     }
     execute_cmd("/bin/chown judge %s ", work_dir);
     execute_cmd("/bin/chmod 750 %s ", work_dir);
 
-    if (compile_chroot && lang != 3 && lang != 9 && lang != 6 && lang != 11)
+    if (compile_chroot && lang != LANG_JAVA && lang != LANG_CSHARP && lang != LANG_PYTHON && lang != LANG_FREEBASIC && lang != LANG_BASH )
     {
-      execute_cmd("mkdir -p bin usr lib lib64 etc/alternatives proc tmp dev");
-      execute_cmd("chown judge *");
-      execute_cmd("mount -o bind /bin bin");
-      execute_cmd("mount -o remount,ro bin");
-      execute_cmd("mount -o bind /usr usr");
-      execute_cmd("mount -o remount,ro usr");
-      execute_cmd("mount -o bind /lib lib");
-      execute_cmd("mount -o remount,ro lib");
+      if (access("usr", F_OK) == -1){
+        execute_cmd("mkdir -p root/.cache/go-build usr etc/alternatives proc tmp dev");
+        execute_cmd("chown judge -R root tmp ");
+        execute_cmd("mount -o bind /usr usr");
+        execute_cmd("mount -o remount,ro usr");
+        execute_cmd("ln -s usr/bin bin");
+        execute_cmd("ln -s usr/lib lib");
+        execute_cmd("ln -s usr/lib32 lib32");
+        execute_cmd("ln -s usr/libx32 libx32");
 #ifndef __i386__
-      execute_cmd("mount -o bind /lib64 lib64");
-      execute_cmd("mount -o remount,ro lib64");
+        execute_cmd("ln -s usr/lib64 lib64");
 #endif
-      execute_cmd("mount -o bind /etc/alternatives etc/alternatives");
-      execute_cmd("mount -o remount,ro etc/alternatives");
-      execute_cmd("mount -t proc /proc proc");
-      if (lang > 2 && lang != 6 && lang != 10 && lang != 13 && lang != 14 && lang != 17)
-      {
-        execute_cmd("mkdir -p bin usr lib lib64 etc/alternatives proc tmp dev");
-        //execute_cmd("mount -o bind /dev dev");
-        //execute_cmd("mount -o remount,ro dev");
+        execute_cmd("cp /etc/alternatives/* etc/alternatives");
+        execute_cmd("cp /etc/fpc* etc/");
+        execute_cmd("mount -o bind /proc proc");
+        if (lang > LANG_PASCAL && lang != LANG_PYTHON && lang != LANG_OBJC && lang != LANG_CLANG && lang != LANG_CLANGPP)
+        {
+          execute_cmd("mount -o bind /dev dev");
+          execute_cmd("mount -o remount,ro dev");
+        }
+        //execute_cmd("mount -o remount,ro proc");
       }
-      //execute_cmd("mount -o remount,ro proc");
-      chroot(work_dir);
+      if(chroot(work_dir)) printf("warning chroot fail!\n");
     }
     while (setgid(1536) != 0)
       sleep(1);
@@ -1534,61 +1611,63 @@ int compile(int lang, char *work_dir)
 
     switch (lang)
     {
-    case 0:
+    case LANG_C:
       execvp(CP_C[0], (char *const *)CP_C);
       break;
-    case 1:
+    case LANG_CPP:
       execvp(CP_X[0], (char *const *)CP_X);
       break;
-    case 2:
+    case LANG_PASCAL:
       execvp(CP_P[0], (char *const *)CP_P);
       break;
-    case 3:
+    case LANG_JAVA:
       execvp(CP_J[0], (char *const *)CP_J);
       break;
-    case 4:
+    case LANG_RUBY:
       execvp(CP_R[0], (char *const *)CP_R);
       break;
-    case 5:
+    case LANG_BASH:
       execvp(CP_B[0], (char *const *)CP_B);
       break;
-    case 6:
+    case LANG_PYTHON:
       execvp(CP_Y[0], (char * const *) CP_Y);
       break;
-    case 7:
+    case LANG_PHP:
       execvp(CP_PH[0], (char *const *)CP_PH);
       break;
-    case 8:
+    case LANG_PERL:
       execvp(CP_PL[0], (char *const *)CP_PL);
       break;
-    case 9:
+    case LANG_CSHARP:
       execvp(CP_CS[0], (char *const *)CP_CS);
       break;
-
-    case 10:
+    case LANG_OBJC:
       execvp(CP_OC[0], (char *const *)CP_OC);
       break;
-    case 11:
+    case LANG_FREEBASIC:
       execvp(CP_BS[0], (char *const *)CP_BS);
       break;
-    case 13:
+    case LANG_CLANG:
       execvp(CP_CLANG[0], (char *const *)CP_CLANG);
       break;
-    case 14:
+    case LANG_CLANGPP:
       execvp(CP_CLANG_CPP[0], (char *const *)CP_CLANG_CPP);
       break;
-    case 15:
+    case LANG_LUA:
       execvp(CP_LUA[0], (char *const *)CP_LUA);
       break;
-    //case 16:
+    //case LANG_JS:
     //  execvp(CP_JS[0], (char * const *) CP_JS);
     //  break;
-    case 17:
-      execvp(CP_GO[0], (char *const *)CP_GO);
+    case LANG_GO:
+      execvpe(CP_GO[0], (char *const *)CP_GO,envp);
       break;
-    case 19:
+    case LANG_FORTRAN:
       execvp(CP_FORTRAN[0], (char *const *)CP_FORTRAN);
       break;
+    case LANG_COBOL:
+			execvp(CP_COBOL[0], (char *const *)CP_COBOL);
+			break;
     default:
       printf("nothing to do!\n");
     }
@@ -1602,12 +1681,12 @@ int compile(int lang, char *work_dir)
     int status = 0;
 
     waitpid(pid, &status, 0);
-    if (lang > 3 && lang < 7)
+    if (lang > LANG_JAVA && lang < LANG_PHP)
       status = get_file_size("ce.txt");
     if (DEBUG)
       printf("status=%d\n", status);
-    execute_cmd("/bin/umount -f bin usr lib lib64 etc/alternatives proc dev 2>/dev/null");
-    execute_cmd("/bin/umount -f %s/* 2>/dev/null", work_dir);
+    execute_cmd("/bin/umount -l bin usr lib lib64 etc/alternatives dev 2>/dev/null");
+    //execute_cmd("/bin/umount -r %s/* 2>/dev/null", work_dir);
     umount(work_dir);
 
     return status;
@@ -1639,7 +1718,7 @@ int get_proc_status(int pid, const char *mark)
     buf[strlen(buf) - 1] = 0;
     if (strncmp(buf, mark, m) == 0)
     {
-      sscanf(buf + m + 1, "%d", &ret);
+      if(1!=sscanf(buf + m + 1, "%d", &ret)) printf("proc read fail\n");
     }
   }
   if (pf)
@@ -1648,7 +1727,7 @@ int get_proc_status(int pid, const char *mark)
 }
 
 #ifdef _mysql_h
-int init_mysql_conn()
+int init_mysql_conn()   //连接数据库
 {
 
   conn = mysql_init(NULL);
@@ -1670,6 +1749,22 @@ int init_mysql_conn()
   }
   return 1;
 }
+int check_mysql_conn(){ //fixing too many test files cause mysql to timeout
+  MYSQL_RES *res;
+  const char * sql="select 1";
+  while(mysql_real_query(conn,sql,strlen(sql))){
+    if(DEBUG){
+      printf("..update failed! %s\n",mysql_error(conn));
+      write_log("\n.......Mysql time out !---- retry............\n");
+    }
+    mysql_close(conn);
+    sleep(1);
+    init_mysql_conn();
+  }
+  res = mysql_store_result(conn);
+  mysql_free_result(res);
+  return 0;
+}
 #endif
 
 #ifdef _mysql_h
@@ -1685,13 +1780,14 @@ void _get_solution_mysql(int solution_id, char *work_dir, int lang)
   res = mysql_store_result(conn);
 
   // create the src file
-  if (DEBUG)
-    printf("Main=%s", src_pth);
+
   if (res != NULL)
   {
     row = mysql_fetch_row(res);
     if(row != NULL) {
       sprintf(src_pth, "Main.%s", lang_ext[lang]);
+      if (DEBUG)
+        printf("Main=%s", src_pth);
       FILE *fp_src = fopen(src_pth, "we");
       fprintf(fp_src, "%s", row[0]);
       mysql_free_result(res); // free the memory
@@ -1714,8 +1810,8 @@ void _get_solution_http(int solution_id, char *work_dir, int lang)
   //login();
 
   const char *cmd2 =
-      "wget --post-data=\"getsolution=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O %s \"%s/admin/problem_judge.php\"";
-  FILE *pout = read_cmd_output(cmd2, solution_id, src_pth, http_baseurl);
+      "wget --post-data=\"getsolution=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O %s \"%s%s\"";
+  FILE *pout = read_cmd_output(cmd2, solution_id, src_pth, http_baseurl, http_apipath);
 
   pclose(pout);
 }
@@ -1734,7 +1830,7 @@ void get_solution(int solution_id, char *work_dir, int lang)
     _get_solution_mysql(solution_id, work_dir, lang);
 #endif
   }
-  if(lang == 6 ){  
+  if(lang == LANG_PYTHON ){    // 从源码中搜索python2字样，失败的结果非零默认python3,成功的结果为0是python2
     py2 = execute_cmd("/bin/grep 'python2' %s/Main.py > /dev/null", work_dir);
   }
   execute_cmd("chown judge %s/%s", work_dir, src_pth);
@@ -1780,8 +1876,8 @@ void _get_custominput_http(int solution_id, char *work_dir)
   //login();
 
   const char *cmd2 =
-      "wget --post-data=\"getcustominput=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O %s \"%s/admin/problem_judge.php\"";
-  FILE *pout = read_cmd_output(cmd2, solution_id, src_pth, http_baseurl);
+      "wget --post-data=\"getcustominput=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O %s \"%s%s\"";
+  FILE *pout = read_cmd_output(cmd2, solution_id, src_pth, http_baseurl, http_apipath);
 
   pclose(pout);
 }
@@ -1800,9 +1896,8 @@ void get_custominput(int solution_id, char *work_dir)
 }
 
 #ifdef _mysql_h
-void _get_solution_info_mysql(int solution_id, int &p_id, char *user_id,
-                              int &lang,int &cid)
-{
+void _get_solution_info_mysql(int solution_id, int & p_id, char * user_id,
+                              int & lang,int &cid) {
 
   MYSQL_RES *res;
   MYSQL_ROW row;
@@ -1837,37 +1932,32 @@ void _get_solution_info_mysql(int solution_id, int &p_id, char *user_id,
   if(row[3]==NULL) cid=0;
   else cid = atoi(row[3]);
   printf("cid:%d\n",cid);
-  if (res != NULL)
-  {
-    mysql_free_result(res); // free the memory
-    res = NULL;
+  if(res!=NULL) {
+    mysql_free_result(res);                         // free the memory
+    res=NULL;
   }
 }
 #endif
-void _get_solution_info_http(int solution_id, int &p_id, char *user_id,
-                             int &lang,int & cid)
-{
+void _get_solution_info_http(int solution_id, int & p_id, char * user_id,
+                             int & lang,int & cid) {
 
   login();
 
   const char *cmd =
-      "wget --post-data=\"getsolutioninfo=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *pout = read_cmd_output(cmd, solution_id, http_baseurl);
-  fscanf(pout, "%d", &p_id);
-  fscanf(pout, "%s", user_id);
-  fscanf(pout, "%d", &lang);
-  fscanf(pout, "%d", &cid);
+      "wget --post-data=\"getsolutioninfo=1&sid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *pout = read_cmd_output(cmd, solution_id, http_baseurl, http_apipath);
+  if(1!=fscanf(pout, "%d", &p_id))   printf("http problem_id read fail...\n");
+  if(1!=fscanf(pout, "%s", user_id)) printf("http user_id read fail ... \n") ;
+  if(1!=fscanf(pout, "%d", &lang))   printf("http language read fail ... \n") ;
+  if(1!=fscanf(pout, "%d", &cid))    printf("http contest_id read fail ... \n") ;
   pclose(pout);
 }
-void get_solution_info(int solution_id, int &p_id, char *user_id,
-                       int &lang,int & cid) {
+void get_solution_info(int solution_id, int & p_id, char * user_id,
+                       int & lang,int & cid) {
 
-  if (http_judge)
-  {
+  if (http_judge) {
     _get_solution_info_http(solution_id, p_id, user_id, lang,cid);
-  }
-  else
-  {
+  } else {
 #ifdef _mysql_h
     _get_solution_info_mysql(solution_id, p_id, user_id, lang,cid);
 #endif
@@ -1904,11 +1994,11 @@ void _get_problem_info_http(int p_id, double &time_lmt, int &mem_lmt,
   //login();
 
   const char *cmd =
-      "wget --post-data=\"getprobleminfo=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *pout = read_cmd_output(cmd, p_id, http_baseurl);
-  fscanf(pout, "%lf", &time_lmt);
-  fscanf(pout, "%d", &mem_lmt);
-  fscanf(pout, "%d", &isspj);
+      "wget --post-data=\"getprobleminfo=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *pout = read_cmd_output(cmd, p_id, http_baseurl, http_apipath);
+  if(1!=fscanf(pout, "%lf", &time_lmt)) printf("http read time_limit fail...\n");
+  if(1!=fscanf(pout, "%d", &mem_lmt)  ) printf("http read memory_limit fail...\n");
+  if(1!=fscanf(pout, "%d", &isspj)    ) printf("http read special judge fail...\n");
   pclose(pout);
   if(DEBUG) printf("time_lmt:%g\n",time_lmt);
 }
@@ -1962,13 +2052,39 @@ void prepare_files(char *filename, int namelen, char *infile, int &p_id,
   escape(fname, fname0);
   //printf("%s\n%s\n",fname0,fname);
   sprintf(infile, "%s/data/%d/%s.in", oj_home, p_id, fname);
-  if(copy_data) execute_cmd("/bin/cp '%s' %s/data.in", infile, work_dir);
+  char noip_file_name[BUFFER_SIZE];
+  sprintf(noip_file_name,"%s/data/%d/input.name",oj_home,p_id);
+  if(DEBUG) printf("NOIP filename:%s\n",noip_file_name);
+   if (access(noip_file_name, R_OK ) != -1){
+    if(DEBUG) printf("NOIP filename:%s\n",noip_file_name);
+    FILE * fpname=fopen(noip_file_name,"r");
+    if(fscanf(fpname,"%s",noip_file_name)){
+        execute_cmd("/bin/cp '%s' %s/%s", infile, work_dir,noip_file_name);   // 如果存在input.name则复制测试数据
+        if(DEBUG) printf("NOIP filename:%s\n",noip_file_name);
+    }
+    fclose(fpname);
+  }else{
+    if(copy_data) execute_cmd("/bin/cp '%s' %s/data.in", infile, work_dir);   // 如果开启了COPY_DATA则复制测试数据
+  }
   execute_cmd("/bin/cp %s/data/%d/*.dic %s/ 2>/dev/null", oj_home, p_id, work_dir);
-
+  execute_cmd("chown judge %s/*.dic ", work_dir); //fix .dic files permission
   sprintf(outfile, "%s/data/%d/%s.out", oj_home, p_id, fname0);
-  sprintf(userfile, "%s/run%d/user.out", oj_home, runner_id);
-}
 
+  sprintf(noip_file_name,"%s/data/%d/output.name",oj_home,p_id);
+  if(DEBUG) printf("NOIP filename:%s\n",noip_file_name);
+   if (access(noip_file_name, R_OK ) != -1){
+
+    FILE * fpname=fopen(noip_file_name,"r");
+    if(fscanf(fpname,"%s",noip_file_name)){
+        if(DEBUG) printf("NOIP filename:%s\n",noip_file_name);
+        sprintf(userfile, "%s/run%d/%s", oj_home, runner_id,noip_file_name);
+    }
+    fclose(fpname);
+  }else{
+    sprintf(userfile, "%s/run%d/user.out", oj_home, runner_id);
+  }
+}
+// 以下 copy_开头的函数均为准备相应语言的chroot环境，复制动态链接库等，如果使用的系统不是Ubuntu则路径有所区别，可以用ldd/find查看实际位置。
 void copy_shell_runtime(char *work_dir)
 {
 
@@ -2110,14 +2226,14 @@ void copy_ruby_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
-  execute_cmd("mkdir -p %s/usr", work_dir);
+  execute_cmd("mkdir -p %s/usr/bin", work_dir);
   execute_cmd("mkdir -p %s/usr/lib", work_dir);
   execute_cmd("mkdir -p %s/usr/lib64", work_dir);
   execute_cmd("cp -a /usr/lib/libruby* %s/usr/lib/", work_dir);
   execute_cmd("cp -a /usr/lib/ruby* %s/usr/lib/", work_dir);
   execute_cmd("cp -a /usr/lib64/ruby* %s/usr/lib64/", work_dir);
   execute_cmd("cp -a /usr/lib64/libruby* %s/usr/lib64/", work_dir);
-  execute_cmd("cp -a /usr/bin/ruby* %s/", work_dir);
+  execute_cmd("cp -a /usr/bin/ruby* %s/usr/bin", work_dir);
 #ifdef __x86_64__
   execute_cmd("/bin/cp -a /usr/lib/x86_64-linux-gnu/libruby* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp -a /usr/lib/x86_64-linux-gnu/libgmp* %s/usr/lib/", work_dir);
@@ -2130,6 +2246,7 @@ void copy_guile_runtime(char *work_dir)
   copy_shell_runtime(work_dir);
   execute_cmd("/bin/mkdir -p %s/proc", work_dir);
   execute_cmd("/bin/mount -o bind /proc %s/proc", work_dir);
+  execute_cmd("/bin/mkdir -p %s/usr/bin", work_dir);
   execute_cmd("/bin/mkdir -p %s/usr/lib", work_dir);
   execute_cmd("/bin/mkdir -p %s/usr/share", work_dir);
   execute_cmd("/bin/cp -a /usr/share/guile %s/usr/share/", work_dir);
@@ -2143,7 +2260,7 @@ void copy_guile_runtime(char *work_dir)
   execute_cmd("/bin/cp /usr/lib/libgmp* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp /usr/lib/*/libltdl* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp /usr/lib/libltdl* %s/usr/lib/", work_dir);
-  execute_cmd("/bin/cp /usr/bin/guile* %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/guile* %s/usr/bin", work_dir);
 #ifdef __x86_64__
   execute_cmd("/bin/cp -a /usr/lib/x86_64-linux-gnu/libguile* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp -a /usr/lib/x86_64-linux-gnu/libgc* %s/usr/lib/", work_dir);
@@ -2154,10 +2271,11 @@ void copy_guile_runtime(char *work_dir)
 
 void copy_python_runtime(char *work_dir)
 {
-
   copy_shell_runtime(work_dir);
   execute_cmd("mkdir -p %s/usr/include", work_dir);
   execute_cmd("mkdir -p %s/dev", work_dir);
+
+  execute_cmd("mkdir -p %s/usr/bin", work_dir);
   execute_cmd("mkdir -p %s/usr/lib", work_dir);
   execute_cmd("mkdir -p %s/usr/lib64", work_dir);
   execute_cmd("mkdir -p %s/usr/local/lib", work_dir);
@@ -2175,7 +2293,7 @@ void copy_python_runtime(char *work_dir)
   execute_cmd("mkdir -p %s/usr/share/abrt/conf.d/plugins", work_dir);
   execute_cmd("cp -a /usr/share/abrt/conf.d/plugins/python.conf %s/usr/share/abrt/conf.d/plugins/python.conf", work_dir);
   if(!py2){  
-    execute_cmd("cp /usr/bin/python2* %s/", work_dir);
+    execute_cmd("cp /usr/bin/python2* %s/usr/bin", work_dir);
     execute_cmd("cp -a /usr/lib/python2* %s/usr/lib/", work_dir);
     execute_cmd("cp -a /usr/lib64/python2.7  %s/usr/lib64/", work_dir);
 #if (defined __mips__)
@@ -2184,7 +2302,7 @@ void copy_python_runtime(char *work_dir)
     execute_cmd("cp -a /usr/local/lib/python2* %s/usr/local/lib/", work_dir);
 #endif
   }else{
-    execute_cmd("cp /usr/bin/python3* %s/", work_dir);
+    execute_cmd("cp /usr/bin/python3* %s/usr/bin", work_dir);
     execute_cmd("cp -a /usr/lib/python3* %s/usr/lib/", work_dir);
     execute_cmd("cp -a /usr/lib64/python3.6  %s/usr/lib64/", work_dir);
 #if (defined __mips__)
@@ -2238,7 +2356,7 @@ void copy_php_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
-  execute_cmd("/bin/mkdir %s/usr", work_dir);
+  execute_cmd("/bin/mkdir -p %s/usr/bin", work_dir);
   execute_cmd("/bin/mkdir %s/usr/lib", work_dir);
   execute_cmd("/bin/cp /usr/lib/libedit* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp /usr/lib/libdb* %s/usr/lib/", work_dir);
@@ -2259,17 +2377,17 @@ void copy_php_runtime(char *work_dir)
   execute_cmd("/bin/cp /usr/lib/x86_64-linux-gnu/libssl* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp /usr/lib/x86_64-linux-gnu/libcrypto* %s/usr/lib/", work_dir);
 #endif
-  execute_cmd("/bin/cp /usr/bin/php* %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/php* %s/usr/bin", work_dir);
   execute_cmd("chmod +rx %s/Main.php", work_dir);
 }
 void copy_perl_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
-  execute_cmd("/bin/mkdir %s/usr", work_dir);
+  execute_cmd("/bin/mkdir -p %s/usr/bin", work_dir);
   execute_cmd("/bin/mkdir %s/usr/lib", work_dir);
   execute_cmd("/bin/cp /usr/lib/libperl* %s/usr/lib/", work_dir);
-  execute_cmd("/bin/cp /usr/bin/perl* %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/perl* %s/usr/bin", work_dir);
 }
 void copy_freebasic_runtime(char *work_dir)
 {
@@ -2285,7 +2403,7 @@ void copy_mono_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
-  execute_cmd("/bin/mkdir %s/usr", work_dir);
+  execute_cmd("/bin/mkdir -p %s/usr/bin", work_dir);
   execute_cmd("/bin/mkdir %s/proc", work_dir);
   execute_cmd("/bin/mkdir -p %s/usr/lib/mono/2.0", work_dir);
   execute_cmd("/bin/cp -a /usr/lib/mono %s/usr/lib/", work_dir);
@@ -2295,7 +2413,7 @@ void copy_mono_runtime(char *work_dir)
   execute_cmd("/bin/cp /usr/lib/libgthread* %s/usr/lib/", work_dir);
 
   execute_cmd("/bin/mount -o bind /proc %s/proc", work_dir);
-  execute_cmd("/bin/cp /usr/bin/mono* %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/mono* %s/usr", work_dir);
 
   execute_cmd("/bin/cp /usr/lib/libgthread* %s/usr/lib/", work_dir);
   execute_cmd("/bin/cp /lib/libglib* %s/lib/", work_dir);
@@ -2322,15 +2440,17 @@ void copy_lua_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
+  execute_cmd("mkdir -p %s/usr/bin", work_dir);
   execute_cmd("/bin/mkdir -p %s/usr/local/lib", work_dir);
   execute_cmd("/bin/mkdir -p %s/usr/local/bin", work_dir);
-  execute_cmd("/bin/cp /usr/bin/lua %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/lua %s/usr/bin", work_dir);
 }
 void copy_sql_runtime(char *work_dir)
 {
 
   copy_shell_runtime(work_dir);
-  execute_cmd("/bin/cp /usr/bin/sqlite3 %s/", work_dir);
+  execute_cmd("mkdir -p %s/usr/bin", work_dir);
+  execute_cmd("/bin/cp /usr/bin/sqlite3 %s/usr/bin", work_dir);
 #ifdef __mips__
   execute_cmd("/bin/cp /lib64/libedit.so.0 %s/lib64/", work_dir);
   execute_cmd("/bin/cp /lib64/libm.so.6 %s/lib64/", work_dir);
@@ -2368,7 +2488,8 @@ void copy_sql_runtime(char *work_dir)
 void copy_js_runtime(char *work_dir)
 {
 
-  //	copy_shell_runtime(work_dir);
+  //copy_shell_runtime(work_dir);
+  execute_cmd("mkdir -p %s/usr/bin", work_dir);
   execute_cmd("mkdir -p %s/dev", work_dir);
   execute_cmd("/bin/mount -o bind /dev %s/dev", work_dir);
   execute_cmd("/bin/mount -o remount,ro %s/dev", work_dir);
@@ -2415,30 +2536,38 @@ void copy_js_runtime(char *work_dir)
   execute_cmd("/bin/cp /lib64/ld-linux-x86-64.so.* %s/lib64/", work_dir);
   execute_cmd("/bin/cp /usr/lib/x86_64-linux-gnu/libicudata.so.* %s/lib/x86_64-linux-gnu/", work_dir);
 #endif
-  execute_cmd("/bin/cp /usr/bin/nodejs %s/", work_dir);
+  execute_cmd("/bin/cp /usr/bin/node %s/usr/bin", work_dir);
 }
 void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
-                  int &mem_lmt,char * data_file_path)
+                  int &mem_lmt,char * data_file_path,int p_id) // 为每个测试数据运行一次提交的答案
 {
+  //准备环境变量处理中文，如果希望使用非中文的语言环境，可能需要修改这些环境变量
   char * const envp[]={(char * const )"PYTHONIOENCODING=utf-8",
            (char * const )"LANG=zh_CN.UTF-8",
            (char * const )"LANGUAGE=zh_CN.UTF-8",
            (char * const )"LC_ALL=zh_CN.utf-8",NULL};
-  nice(19);
+  if(nice(19)!=19) printf("......................renice fail... \n");
   // now the user is "judger"
-  chdir(work_dir);
+  if(chdir(work_dir)){
+    write_log("Working directory :%s switch fail...",work_dir);    
+    exit(-4);
+  }
   // open the files
-  if(lang==18){ 
+  if(lang == LANG_SQL){ 
     execute_cmd("/usr/bin/sqlite3 %s/data.db < %s", work_dir,data_file_path);
     execute_cmd("/bin/chown judge %s/data.db", work_dir);
-    freopen("Main.sql", "r", stdin);
+    stdin=freopen("Main.sql", "r", stdin);
   }else{
-    if(copy_data)
-
-      freopen("data.in", "r", stdin);
-    else{
-      printf("infile: [%s]\n",data_file_path);
-      freopen(data_file_path,"r",stdin);
+    char noip_file_name[BUFFER_SIZE];
+    sprintf(noip_file_name,"%s/data/%d/input.name",oj_home,p_id);
+    if(DEBUG) printf("---------NOIP filename:%s\n",noip_file_name);
+    if (access(noip_file_name, R_OK ) == -1){   //不存在指定文件名，使用标准输入
+      if(copy_data){
+        stdin=freopen("data.in", "r", stdin);
+      }else{
+        printf("infile: [%s]\n",data_file_path);
+        stdin=freopen(data_file_path,"r",stdin);
+      }
     }
   }
   execute_cmd("touch %s/user.out", work_dir);
@@ -2448,16 +2577,36 @@ void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
     execute_cmd("chmod 740 %s/data.in", work_dir);
   }
   execute_cmd("chmod 760 %s/user.out", work_dir);
-  freopen("user.out", "w", stdout);
-  freopen("error.out", "a+", stderr);
+  if (   
+    (!use_docker) 
+    && lang != LANG_JAVA 
+    && lang != LANG_BASH 
+    && lang != LANG_MATLAB 
+    && lang != LANG_CSHARP 
+    && !(lang == LANG_PYTHON && python_free )
+     ){
+    if(DEBUG)printf("chroot...............................................\n");
+  }else{
+    if(DEBUG)printf("Skiping chroot........................................\n");
+  }
+  stdout=freopen("user.out", "w", stdout);
+  stderr=freopen("error.out", "a+", stderr);
   // trace me
   ptrace(PTRACE_TRACEME, 0, NULL, NULL);
   // run me
   if (
-     lang != 3 && lang != 20 && lang != 9 && !(lang ==6 && python_free )
-     ){
-    if(DEBUG)printf("Chrooting...\n");
-    chroot(work_dir);
+		(!use_docker) 
+			&& lang != LANG_JAVA
+			&& lang != LANG_BASH
+			&& lang != LANG_COBOL 
+			&& lang != LANG_MATLAB
+			&& lang != LANG_CSHARP
+			&& !(lang == LANG_PYTHON && python_free )     ){
+    if(chroot(work_dir));
+  }else{
+    if(lang == LANG_PHP){
+      if(chroot(work_dir));
+    }
   }
   while (setgid(1536) != 0)
     sleep(1);
@@ -2479,8 +2628,17 @@ void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
   //if(DEBUG) printf("LIM_CPU=%d",(int)(LIM.rlim_cur));
   setrlimit(RLIMIT_CPU, &LIM);
   alarm(0);
-  alarm( num_of_test * time_lmt / cpu_compensation);
-
+  if ( num_of_test >0 ){
+    if(num_of_test * time_lmt / cpu_compensation>1)
+      alarm( num_of_test * time_lmt / cpu_compensation);
+    else
+      alarm(1);
+  }else{
+    if(time_lmt / cpu_compensation>1)
+      alarm( time_lmt / cpu_compensation);
+    else
+      alarm(1);
+  }
   // file limit
   LIM.rlim_max = STD_F_LIM + STD_MB;
   LIM.rlim_cur = STD_F_LIM;
@@ -2488,19 +2646,19 @@ void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
   // proc limit
   switch (lang)
   {
-  case 17:
-  case 9: //C#
-  case 3: //java
+  case LANG_GO:
+  case LANG_CSHARP: //C#
+  case LANG_JAVA: //java
     LIM.rlim_cur = LIM.rlim_max = 880;
     break;
-  case 4: //ruby
-  case 6:  //python
-  case 12:
-  case 16:
-  case 20:
+  case LANG_RUBY: //ruby
+  case LANG_PYTHON:  //python
+  case LANG_SCHEME:
+  case LANG_JS:
+  case LANG_MATLAB:
     LIM.rlim_cur = LIM.rlim_max = 200;
     break;
-  case 5: //bash
+  case LANG_BASH: //bash
     LIM.rlim_cur = LIM.rlim_max = 3;
     break;
   default:
@@ -2516,77 +2674,75 @@ void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
   // set the memory
   LIM.rlim_cur = STD_MB * mem_lmt / 2 * 3;
   LIM.rlim_max = STD_MB * mem_lmt * 2;
-  if (lang < 3 || lang == 10 || lang == 13 || lang == 14 || lang == 17)
+  if (lang < LANG_JAVA || lang == LANG_OBJC || lang == LANG_CLANG || lang == LANG_CLANGPP || lang == LANG_GO)
     setrlimit(RLIMIT_AS, &LIM);
 
   switch (lang)
   {
-  case 0:
-  case 1:
-  case 2:
-  case 10:
-  case 11:
-  case 13:
-  case 14:
-  case 17:
-  case 19:
+  case LANG_C:
+  case LANG_CPP:
+  case LANG_PASCAL:
+  case LANG_OBJC:
+  case LANG_FREEBASIC:
+  case LANG_CLANG:
+  case LANG_CLANGPP:
+  case LANG_GO:
+  case LANG_FORTRAN:
+  case LANG_COBOL:
     execle("./Main", "./Main", (char *)NULL,envp);
     break;
-  case 3:
+  case LANG_JAVA:
     sprintf(java_xmx, "-Xmx%dM", mem_lmt);
     //sprintf(java_xmx, "-XX:MaxPermSize=%dM", mem_lmt);
 
-    execl("/usr/bin/java", "/usr/bin/java",java_xmx ,
-          "-Djava.security.manager",
-          "-Djava.security.policy=./java.policy", "Main", (char *)NULL);
+    execle("/usr/bin/java", "/usr/bin/java",java_xmx ,
+          "-Djava.security.manager", "-Djava.security.policy=./java.policy",  // this line might be removed in later java version
+          "Main", (char *) NULL,envp);
     break;
-  case 4:
+  case LANG_RUBY:
     //system("/ruby Main.rb<data.in");
-    execl("/ruby", "/ruby", "Main.rb", (char *)NULL);
+    execle("/usr/bin/ruby", "/usr/bin/ruby", "Main.rb", (char *)NULL,envp);
     break;
-  case 5: //bash
-    execl("/bin/bash", "/bin/bash", "Main.sh", (char *)NULL);
+  case LANG_BASH: //bash
+    execle("/bin/bash", "/bin/bash", "Main.sh", (char *)NULL,envp);
     break;
-  case 6: //Python
+  case LANG_PYTHON: //Python
     if (!py2)
-    {       if(python_free)
-      execl("/usr/bin/python2", "/usr/bin/python2", "Main.py", (char *)NULL);
-      else
-      execl("/python2", "/python2", "Main.py", (char *)NULL);
+    {
+      execle("/usr/bin/python2", "/usr/bin/python2", "Main.py", (char *)NULL,envp);
     }
     else
-    {       if(python_free)
-      execl("/usr/bin/python3", "/usr/bin/python3", "Main.py", (char *)NULL);
-      else
-      execle("/python3", "/python3", "Main.py", (char *)NULL, envp);
+    {
+      execle("/usr/bin/python3", "/usr/bin/python3", "Main.py", (char *)NULL,envp);
     }
     break;
-  case 7: //php
-    execl("/php", "/php", "Main.php", (char *)NULL);
+  case LANG_PHP: //php
+    execle("/usr/bin/php", "/usr/bin/php", "Main.php", (char *)NULL, envp);
     break;
-  case 8: //perl
-    execl("/perl", "/perl", "Main.pl", (char *)NULL);
+  case LANG_PERL: //perl
+    execle("/usr/bin/perl", "/usr/bin/perl", "Main.pl", (char *)NULL, envp);
     break;
-  case 9: //Mono C#
+  case LANG_CSHARP: //Mono C#
     execle("/usr/bin/mono", "/usr/bin/mono","--debug",  "Main.exe", (char *)NULL,envp);
     break;
-  case 12: //guile
-    execl("/guile", "/guile", "Main.scm", (char *)NULL);
+  case LANG_SCHEME: //guile
+    execle("/usr/bin/guile", "/usr/bin/guile", "Main.scm", (char *)NULL,envp);
     break;
-  case 15: //guile
-    execl("/lua", "/lua", "Main", (char *)NULL);
+  case LANG_LUA: //lua
+    execle("/usr/bin/lua", "/usr/bin/lua", "Main", (char *)NULL,envp);
     break;
-  case 16: //Node.js
-    execl("/nodejs", "/nodejs", "Main.js", (char *)NULL);
+  case LANG_JS: //Node.js
+    execle("/usr/bin/node", "/usr/bin/node", "Main.js", (char *)NULL,envp);
     break;
-  case 18: //sqlite3
-    execl("/sqlite3", "/sqlite3", "data.db", (char *)NULL);
+  case LANG_SQL: //sqlite3
+    execle("/usr/bin/sqlite3", "/usr/bin/sqlite3", "data.db", (char *)NULL,envp);
     break;
-  case 20: //octave
-    execl("/usr/bin/octave-cli", "/usr/bin/octave-cli", "Main.m", (char *)NULL);
+  case LANG_MATLAB: ////Matlab(Octave)
+    execl("/usr/bin/octave-cli", "/usr/bin/octave-cli", "--no-init-file", "--no-init-path", "--no-line-editing", "--no-site-file", "-W", "-q", "-H", "Main.m", (char *)NULL);
     break;
   }
   //sleep(1);
+  printf("Execution error, USE_DOCKER:%d !\nYou need to install compiler VM or runtime for your language.",use_docker);
   fflush(stderr);
   exit(0);
 }
@@ -2654,6 +2810,8 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
 {
 
   pid_t pid;
+  char spjpath[BUFFER_SIZE/2];
+  char tpjpath[BUFFER_SIZE/2];
   if (DEBUG) printf("pid=%d\n", problem_id);
   // prevent privileges settings caused spj fail in [issues686]
   execute_cmd("chown www-data:judge %s/data/%d/spj %s %s %s", oj_home, problem_id,infile, outfile, userfile);
@@ -2682,11 +2840,19 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
     LIM.rlim_max = STD_F_LIM + STD_MB;
     LIM.rlim_cur = STD_F_LIM;
     setrlimit(RLIMIT_FSIZE, &LIM);
+    sprintf(spjpath,"%s/data/%d/spj", oj_home, problem_id);
+    sprintf(tpjpath,"%s/data/%d/tpj", oj_home, problem_id);
 
-    ret = execute_cmd("%s/data/%d/spj %s %s %s", oj_home, problem_id,
-                      infile, outfile, userfile);
-    if (DEBUG)
-      printf("spj1=%d\n", ret);
+    if( access( tpjpath , X_OK ) == 0 ){
+      ret = execute_cmd("%s/data/%d/tpj %s %s %s 2>> diff.out ", oj_home, problem_id, infile, userfile, outfile);    // testlib style
+      if (DEBUG) printf("testlib spj return: %d\n", ret);
+    }else if (access( spjpath , X_OK ) == 0 ) {
+      ret = execute_cmd("%s/data/%d/spj %s %s %s", oj_home, problem_id, infile, outfile, userfile);    // hustoj style
+      if (DEBUG) printf("hustoj spj return: %d\n", ret);
+    }else{
+      printf("spj tpj not found problem: %d\n", problem_id);
+      ret=1;
+    }
     if (ret)
       exit(1);
     else
@@ -2699,7 +2865,7 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
     waitpid(pid, &status, 0);
     ret = WEXITSTATUS(status);
     if (DEBUG)
-      printf("spj2=%d\n", ret);
+      printf("recorded spj: %d\n", ret);
   }
   return ret;
 }
@@ -2710,7 +2876,7 @@ void judge_solution(int &ACflg, int &usedtime, double time_lmt, int isspj,
 {
   //usedtime-=1000;
   int comp_res;
-  if (!oi_mode)
+  if (num_of_test == 0)
     num_of_test = 1.0;
 
   if (ACflg == OJ_AC){
@@ -2762,11 +2928,11 @@ void judge_solution(int &ACflg, int &usedtime, double time_lmt, int isspj,
     ACflg = comp_res;
   }
   //jvm popup messages, if don't consider them will get miss-WrongAnswer
-  if (lang == 3)
+  if (lang == LANG_JAVA)
   {
     comp_res = fix_java_mis_judge(work_dir, ACflg, topmemory, mem_lmt);
   }
-  if (lang == 6)
+  if (lang == LANG_PYTHON)
   {
     comp_res = fix_python_mis_judge(work_dir, ACflg, topmemory, mem_lmt);
   }
@@ -2806,7 +2972,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
                     int &topmemory, int mem_lmt, int &usedtime, double time_lmt, int &p_id,
                     int &PEflg, char *work_dir)
 {
-  // parent
+  // 父进程中的保姆程序
   int tempmemory = 0;
 
   if (DEBUG)
@@ -2820,7 +2986,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
   {
     // check the usage
 
-    wait4(pidApp, &status, __WALL, &ruse);
+    wait4(pidApp, &status, __WALL, &ruse);     //等待子进程切换内核态（调用系统API或者运行状态变化）
     if (first)
     { //
       ptrace(PTRACE_SETOPTIONS, pidApp, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT
@@ -2828,12 +2994,20 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
            //  |PTRACE_O_TRACECLONE
            //  |PTRACE_O_TRACEFORK
            //  |PTRACE_O_TRACEVFORK
+           //  有的发行版带的PTRACE不识别以上宏，因此注释掉
       );
     }
 
     //jvm gc ask VM before need,so used kernel page fault times and page size
-    if (lang == 3 || lang == 7 || lang == 9 || lang == 13 || lang == 14 || lang == 16 || lang == 17 || lang == 20)
-    {
+    if (lang == LANG_JAVA || 
+		    lang == LANG_PHP || 
+		    lang == LANG_CSHARP || 
+		    lang == LANG_CLANG || lang == LANG_CLANGPP || 
+		    lang == LANG_JS || 
+		    lang == LANG_GO || 
+		    lang == LANG_MATLAB||
+		    lang == LANG_COBOL
+		    )    {
       tempmemory = get_page_fault_mem(ruse, pidApp);
     }
     else
@@ -2853,11 +3027,15 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
     }
     //sig = status >> 8;/*status >> 8 EXITCODE*/
 
-    if (WIFEXITED(status))
-    {
-      break;
+    if (WIFEXITED(status)) { // 子进程已经退出 ，返回值不为0则判RE
+            exitcode = WEXITSTATUS(status);
+            if(exitcode) ACflg=OJ_RE;
+            char error[BUFFER_SIZE];
+            sprintf(error, "\t    non-zero return = %d \n", exitcode);
+            print_runtimeerror(infile+strlen(oj_home)+5,error);
+            break;
     }
-    if ((lang < 4||lang == 5 || lang == 9) && get_file_size("error.out") && !oi_mode)
+    if ((lang < LANG_RUBY ||lang == LANG_BASH || lang == LANG_CSHARP) && get_file_size("error.out") && !oi_mode)
     {
       ACflg = OJ_RE;
       //addreinfo(solution_id);
@@ -2876,7 +3054,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
     /*exitcode == 5 waiting for next CPU allocation          * ruby using system to run,exit 17 ok
      *  Runtime Error:Unknown signal xxx need be added here  
                  */
-    if ((lang >= 3 && exitcode == 17) || exitcode == 0x05 || exitcode == 0 || exitcode == 133)
+    if (((lang >= LANG_JAVA && lang != LANG_OBJC && lang != LANG_CLANG && lang != LANG_CLANGPP) && exitcode == 17) || exitcode == 0x05 || exitcode == 0 || exitcode == 133) // 进程休眠或等待IO
       //go on and on
       ;
     else
@@ -2890,7 +3068,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 
       if (ACflg == OJ_AC)
       {
-        switch (exitcode)
+        switch (exitcode)                  // 根据退出的原因给出判题结果
         {
         case SIGCHLD:
         case SIGALRM:
@@ -2910,14 +3088,14 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
         }
         print_runtimeerror(infile+strlen(oj_home)+5,strsignal(exitcode));
       }
-      ptrace(PTRACE_KILL, pidApp, NULL, NULL);
+      ptrace(PTRACE_KILL, pidApp, NULL, NULL);    // 杀死出问题的进程
 
       break;
     }
     if (WIFSIGNALED(status))
     {
       /*  WIFSIGNALED: if the process is terminated by signal
-       *
+       *  由外部信号触发的进程终止
        *  psignal(int sig, char *s)，like perror(char *s)，print out s, with error msg from system of sig  
        * sig = 5 means Trace/breakpoint trap
        * sig = 11 means Segmentation fault
@@ -2932,7 +3110,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
       }
       if (ACflg == OJ_AC)
       {
-        switch (sig)
+        switch (sig)      //根据原因给出结论
         {
         case SIGCHLD:
         case SIGALRM:
@@ -2953,7 +3131,6 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
       break;
     }
     /*     comment from http://www.felix021.com/blog/read.php?1662
-
      WIFSTOPPED: return true if the process is paused or stopped while ptrace is watching on it
      WSTOPSIG: get the signal if it was stopped by signal
      */
@@ -2962,14 +3139,13 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
   if (!use_ptrace){
     ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
     continue;
-    
   }
 #ifdef __mips__
 //    if(exitcode!=5&&exitcode!=133){
   //https://github.com/strace/strace/blob/master/linux/mips/syscallent-n32.h#L344
     ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
     call_id=(unsigned int)reg.REG_SYSCALL;
-    if( (call_id > 1000 && call_id <5000 )|| (lang == 6 && call_id < 5500)  || call_id> 6500){
+    if( (call_id > 1000 && call_id <5000 )|| (lang == LANG_PYTHON && call_id < 5500)  || call_id> 6500){
         // not a valid syscall
       ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
       continue;
@@ -2996,19 +3172,14 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
     call_id=ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
       call_id = ((unsigned int)reg.REG_SYSCALL) % call_array_size;
 #endif 
-      
 
-      if (record_call)
-      {
-        printf("new call id:%d\n",call_id);
-        call_counter[call_id]++;
-        printf("call %d: %d\n",call_id,call_counter[call_id]);
-      }else if (call_counter[call_id])
-      {
+    if (record_call) {
+      printf("new call id:%d\n",call_id);
+      call_counter[call_id]++;
+      printf("call %d: %d\n",call_id,call_counter[call_id]);
+    } else if (call_counter[call_id]) {
       call_counter[call_id]--;
-    }
-    else
-    { //do not limit JVM syscall for using different JVM
+    } else { //do not limit JVM syscall for using different JVM 对于非法的系统调用，给出具体编号给管理员参考
       ACflg = OJ_RE;
       char error[BUFFER_SIZE];
       sprintf(error,
@@ -3016,23 +3187,28 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
               " TO FIX THIS , ask admin to add the CALLID into corresponding LANG_XXV[] located at okcalls32/64.h ,\n"
               "and recompile judge_client. \n"
               "if you are admin and you don't know what to do ,\n"
-              "chinese explaination can be found on https://zhuanlan.zhihu.com/p/24498599\n",
+              "中文解释查看知乎 https://zhuanlan.zhihu.com/p/24498599\n",
               solution_id, call_id,(unsigned int)reg.REG_SYSCALL);
-
       write_log(error);
       print_runtimeerror(infile+strlen(oj_home)+5,error);
+      //ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
+      //continue;
       ptrace(PTRACE_KILL, pidApp, NULL, NULL);
     }
+    call_id=0;
 #ifdef __mips__
 //       }
     }
 #endif
-    ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
+    ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);    // 继续等待下一次的系统调用或其他中断
     first = false;
     //usleep(1);
   }
-  usedtime += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * cpu_compensation;
-  usedtime += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * cpu_compensation;
+
+  ptrace(PTRACE_KILL, pidApp, NULL, NULL); // 杀死出问题的进程
+
+  usedtime += (ruse.ru_utime.tv_sec * 1000 + ruse.ru_utime.tv_usec / 1000) * cpu_compensation; // 统计用户态耗时，在更快速的CPU上加以cpu_compensation倍数放大
+  usedtime += (ruse.ru_stime.tv_sec * 1000 + ruse.ru_stime.tv_usec / 1000) * cpu_compensation; // 统计内核态耗时，在更快速的CPU上加以cpu_compensation倍数放大
 
   //clean_session(pidApp);
 }
@@ -3042,6 +3218,7 @@ void clean_workdir(char *work_dir)
   umount(work_dir);
   if (DEBUG)
   {
+    execute_cmd("/bin/rmdir %s/log/* 2>/dev/null", work_dir);
     execute_cmd("/bin/rm -rf %s/log/* 2>/dev/null", work_dir);
     execute_cmd("mkdir %s/log/ 2>/dev/null", work_dir);
     execute_cmd("/bin/mv %s/* %s/log/ 2>/dev/null", work_dir, work_dir);
@@ -3050,6 +3227,7 @@ void clean_workdir(char *work_dir)
   {
     execute_cmd("mkdir %s/log/ 2>/dev/null", work_dir);
     execute_cmd("/bin/mv %s/* %s/log/ 2>/dev/null", work_dir, work_dir);
+    execute_cmd("/bin/rmdir %s/log/* 2>/dev/null", work_dir);
     execute_cmd("/bin/rm -rf %s/log/* 2>/dev/null", work_dir);
   }
 }
@@ -3081,7 +3259,7 @@ void init_parameters(int argc, char **argv, int &solution_id,
   else
     strcpy(oj_home, "/home/judge");
 
-  chdir(oj_home); // change the dir// init our work
+  if(chdir(oj_home)) exit(-2); // change the dir// init our work
 
   solution_id = atoi(argv[1]);
   runner_id = atoi(argv[2]);
@@ -3100,11 +3278,11 @@ int get_sim(int solution_id, int lang, int pid, int &sim_s_id)
     execute_cmd("/bin/cp %s ../data/%d/ac/%d.%s 2>/dev/null", src_pth, pid, solution_id,
                 lang_ext[lang]);
     //c cpp will
-    if (lang == 0)
+    if (lang == LANG_C)
       execute_cmd("/bin/ln ../data/%d/ac/%d.%s ../data/%d/ac/%d.%s 2>/dev/null", pid,
                   solution_id, lang_ext[lang], pid, solution_id,
                   lang_ext[lang + 1]);
-    if (lang == 1)
+    if (lang == LANG_CPP)
       execute_cmd("/bin/ln ../data/%d/ac/%d.%s ../data/%d/ac/%d.%s 2>/dev/null", pid,
                   solution_id, lang_ext[lang], pid, solution_id,
                   lang_ext[lang - 1]);
@@ -3116,7 +3294,7 @@ int get_sim(int solution_id, int lang, int pid, int &sim_s_id)
     pf = fopen("sim", "r");
     if (pf)
     {
-      fscanf(pf, "%d%d", &sim, &sim_s_id);
+      if(2==fscanf(pf, "%d%d", &sim, &sim_s_id));
       fclose(pf);
     }
   }
@@ -3141,7 +3319,7 @@ int count_in_files(char *dirpath)
   const char *cmd = "ls -l %s/*.in|wc -l";
   int ret = 0;
   FILE *fjobs = read_cmd_output(cmd, dirpath);
-  fscanf(fjobs, "%d", &ret);
+  if(1!=fscanf(fjobs, "%d", &ret)) printf("warning count files fail");
   pclose(fjobs);
 
   return ret;
@@ -3149,20 +3327,20 @@ int count_in_files(char *dirpath)
 
 int get_test_file(char *work_dir, int p_id)
 {
-  char filename[BUFFER_SIZE/10];
+  char filename[BUFFER_SIZE/2];
   char localfile[BUFFER_SIZE];
   time_t remote_date, local_date;
   int ret = 0;
   const char *cmd =
-      " wget --post-data=\"gettestdatalist=1&time=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
-  FILE *fjobs = read_cmd_output(cmd, p_id, http_baseurl);
-  while (fgets(filename, BUFFER_SIZE - 1, fjobs) != NULL)
+      " wget --post-data=\"gettestdatalist=1&time=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s%s\"";
+  FILE *fjobs = read_cmd_output(cmd, p_id, http_baseurl, http_apipath);
+  while (fgets(filename, sizeof(filename) - 1, fjobs) != NULL)
   {
 
-    sscanf(filename, "%ld", &remote_date);
-    if (fgets(filename, BUFFER_SIZE - 1, fjobs) == NULL)
+    if(1!=sscanf(filename, "%ld", &remote_date)) printf("http remote time stamp read fail\n");
+    if (fgets(filename, sizeof(filename) - 1, fjobs) == NULL)
       break;
-    sscanf(filename, "%s", filename);
+    if(1!=sscanf(filename, "%s", filename)) printf("http filename read fail\n");
     if (http_judge && (!data_list_has(filename)))
       data_list_add(filename);
     sprintf(localfile, "%s/data/%d/%s", oj_home, p_id, filename);
@@ -3173,21 +3351,21 @@ int get_test_file(char *work_dir, int p_id)
     stat(localfile, &fst);
     local_date = fst.st_mtime;
 
-    if (access(localfile, 0) == -1 || local_date < remote_date)
+    if (access(localfile, F_OK) == -1 || local_date < remote_date)
     {
 
       if (strcmp(filename, "spj") == 0)
         continue;
       execute_cmd("/bin/mkdir -p %s/data/%d", oj_home, p_id);
       const char *cmd2 =
-          " wget --post-data=\"gettestdata=1&filename=%d/%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O \"%s\"  \"%s/admin/problem_judge.php\"";
-      execute_cmd(cmd2, p_id, filename, localfile, http_baseurl);
+          " wget --post-data=\"gettestdata=1&filename=%d/%s\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O \"%s\"  \"%s%s\"";
+      execute_cmd(cmd2, p_id, filename, localfile, http_baseurl, http_apipath);
       ret++;
 
       if (strcmp(filename, "spj.c") == 0)
       {
         //   sprintf(localfile,"%s/data/%d/spj.c",oj_home,p_id);
-        if (access(localfile, 0) == 0)
+        if (access(localfile, F_OK) == 0)
         {
           const char *cmd3 = "gcc -o %s/data/%d/spj %s/data/%d/spj.c";
           execute_cmd(cmd3, oj_home, p_id, oj_home, p_id);
@@ -3196,7 +3374,7 @@ int get_test_file(char *work_dir, int p_id)
       if (strcmp(filename, "spj.cc") == 0)
       {
         //     sprintf(localfile,"%s/data/%d/spj.cc",oj_home,p_id);
-        if (access(localfile, 0) == 0)
+        if (access(localfile, F_OK) == 0)
         {
           const char *cmd4 =
               "g++ -o %s/data/%d/spj %s/data/%d/spj.cc";
@@ -3232,6 +3410,16 @@ void print_call_array()
   }
   printf("0};\n");
 }
+int mark_of_name(const char * name){
+  int mark;
+  printf("reading mark from %s \n",name);
+  if(sscanf(name,"%*[^\[][%d]",&mark)==1){
+    printf("reading mark %d \n",mark);
+    return mark;
+  }else{
+    return 10;
+  }
+}
 int main(int argc, char **argv)
 {
 
@@ -3247,7 +3435,7 @@ int main(int argc, char **argv)
 
   init_parameters(argc, argv, solution_id, runner_id);
 
-  init_mysql_conf();
+  init_judge_conf();
 
 #ifdef _mysql_h
   if (!http_judge && !init_mysql_conn())
@@ -3257,6 +3445,14 @@ int main(int argc, char **argv)
 #endif
   //set work directory to start running & judging
   sprintf(work_dir, "%s/run%s/", oj_home, argv[2]);
+  sprintf(lock_file,"%s/client%s.pid",oj_home,argv[2]);
+
+  while ( already_running()) {
+    syslog(LOG_ERR | LOG_DAEMON,
+        "This working directory is occupied !\n");
+    printf("%s already has one judge_client in it!\n",work_dir);
+    sleep(5);
+  }
 
   if (shm_run){
     mk_shm_workdir(work_dir);
@@ -3266,10 +3462,10 @@ int main(int argc, char **argv)
   
   clean_workdir(work_dir);
 
-  chdir(work_dir);
+  if(chdir(work_dir)) exit(-3);
 
   if (http_judge)
-    system("/bin/ln -s ../cookie ./");
+    if(!system("/bin/ln -s ../cookie ./")) printf("cookie link fail \n");
   get_solution_info(solution_id, p_id, user_id, lang,cid);
   //get the limit
 
@@ -3288,13 +3484,13 @@ int main(int argc, char **argv)
   get_solution(solution_id, work_dir, lang);
 
   //java and other VM language are lucky to have the global bonus in judge.conf
-  if (lang >= 3 && lang != 10 && lang != 13 && lang != 14 && lang != 17)
+  if (lang >= LANG_JAVA && lang != LANG_OBJC && lang != LANG_CLANG && lang != LANG_CLANGPP && lang != LANG_GO)
   { //ObjectivC Clang Clang++ Go not VM or Script
     // the limit for java
     time_lmt = time_lmt + java_time_bonus;
     mem_lmt = mem_lmt + java_memory_bonus;
     // copy java.policy
-    if (lang == 3)
+    if (lang == LANG_JAVA)
     {
       execute_cmd("/bin/cp %s/etc/java0.policy %s/java.policy", oj_home, work_dir);
       execute_cmd("chmod 755 %s/java.policy", work_dir);
@@ -3321,10 +3517,8 @@ int main(int argc, char **argv)
   {
     addceinfo(solution_id);
     update_solution(solution_id, OJ_CE, 0, 0, 0, 0, 0.0);
-    if (!turbo_mode)
-      update_user(user_id);
-    if (!turbo_mode)
-      update_problem(p_id,cid);
+    if(!turbo_mode) update_user(user_id);
+    if(!turbo_mode) update_problem(p_id,cid);
 #ifdef _mysql_h
     if (!http_judge)
       mysql_close(conn);
@@ -3348,14 +3542,35 @@ int main(int argc, char **argv)
   sprintf(fullpath, "%s/data/%d", oj_home, p_id); // the fullpath of data dir
 
   // open DIRs
-  DIR *dp;
+  //DIR *dp;
   dirent *dirp;
   // using http to get remote test data files
   if (p_id > 0 && http_judge && http_download)
     get_test_file(work_dir, p_id);
+  struct dirent **namelist;
+  int namelist_len;
+  namelist_len = scandir(fullpath,&namelist,inFile,alphasort);
+  if(p_id > 0 && namelist_len == -1 ){
+    
+    write_log("No such dir:%s!\n", fullpath);
+#ifdef _mysql_h
+    if (!http_judge)
+      mysql_close(conn);
+#endif
+    exit(-1);
+
+  }else{
+    if(DEBUG){
+      printf("total test case:%d \n", namelist_len);
+      for(int i=0;i<namelist_len;i++){
+        printf("test file %d : %s\n",i+1,namelist[i]->d_name);
+      }
+    }
+
+  }
+/*
   if (p_id > 0 && (dp = opendir(fullpath)) == NULL)
   {
-
     write_log("No such dir:%s!\n", fullpath);
 #ifdef _mysql_h
     if (!http_judge)
@@ -3363,41 +3578,47 @@ int main(int argc, char **argv)
 #endif
     exit(-1);
   }
+  
+  
+*/
 
   int ACflg, PEflg;
   ACflg = PEflg = OJ_AC;
   int namelen;
   int usedtime = 0, topmemory = 0;
-
-  //create chroot for ruby bash python
-  if (lang == 4)
-    copy_ruby_runtime(work_dir);
-  if (lang == 5)
-    copy_bash_runtime(work_dir);
-  if (lang == 6 && !python_free)
-    copy_python_runtime(work_dir);
-  if (lang == 7)
-    copy_php_runtime(work_dir);
-  if (lang == 8)
-    copy_perl_runtime(work_dir);
-//  if (lang == 9)
-//    copy_mono_runtime(work_dir);
-  if (lang == 10)
-    copy_objc_runtime(work_dir);
-  if (lang == 11)
-    copy_freebasic_runtime(work_dir);
-  if (lang == 12)
-    copy_guile_runtime(work_dir);
-  if (lang == 15)
-    copy_lua_runtime(work_dir);
-  if (lang == 16)
-    copy_js_runtime(work_dir);
-  if (lang == 18)
-    copy_sql_runtime(work_dir);
-  // read files and run
-  // read files and run
+  if (lang == LANG_BASH){
+      execute_cmd("busybox dos2unix Main.sh", work_dir);
+  }
+  if(!use_docker){
+    //create chroot for ruby bash python
+    if (lang == LANG_RUBY)
+      copy_ruby_runtime(work_dir);
+    if (lang == LANG_BASH)
+      copy_bash_runtime(work_dir);
+    if (lang == LANG_PYTHON && !python_free)
+      copy_python_runtime(work_dir);
+    if (lang == LANG_PHP)
+      copy_php_runtime(work_dir);
+    if (lang == LANG_PERL)
+      copy_perl_runtime(work_dir);
+  //  if (lang == LANG_CSHARP)
+  //    copy_mono_runtime(work_dir);
+    if (lang == LANG_OBJC)
+      copy_objc_runtime(work_dir);
+    if (lang == LANG_FREEBASIC)
+      copy_freebasic_runtime(work_dir);
+    if (lang == LANG_SCHEME)
+      copy_guile_runtime(work_dir);
+    if (lang == LANG_LUA)
+      copy_lua_runtime(work_dir);
+    if (lang == LANG_JS)
+      copy_js_runtime(work_dir);
+    if (lang == LANG_SQL)
+      copy_sql_runtime(work_dir);
+  }
   // read files and run
   double pass_rate = 0.0;
+  int mark=0,total_mark=0,get_mark=0;
   int finalACflg = ACflg;
   if (p_id == 0)
   { //custom input running
@@ -3408,7 +3629,7 @@ int main(int argc, char **argv)
 
     if (pidApp == 0)
     {
-      run_solution(lang, work_dir, time_lmt, usedtime, mem_lmt,(char *)"data.in");
+      run_solution(lang, work_dir, time_lmt, usedtime, mem_lmt,(char *)"data.in",p_id);
     }
     else
     {
@@ -3431,30 +3652,39 @@ int main(int argc, char **argv)
     clean_workdir(work_dir);
     exit(0);
   }
-
+/*  
   for (;(dirp = readdir(dp)) != NULL;)
   {
-
     int namelen = isInFile(dirp->d_name); // check if the file is *.in or not
     if (namelen == 0)
       continue;
     num_of_test++;
   }
   rewinddir(dp);
+*/  
+  num_of_test=namelist_len;
 
-  for (; (oi_mode || ACflg == OJ_AC || ACflg == OJ_PE) && (dirp = readdir(dp)) != NULL;)
+  if( num_of_test == 0 ){
+    print_runtimeerror((char *)"no test data ",(char *)" no *.in file found");
+    ACflg = OJ_RE;
+    finalACflg = OJ_RE;
+  }
+
+  for (int i=0 ; (oi_mode || ACflg == OJ_AC || ACflg == OJ_PE) && i < namelist_len ;i++)
   {
+    dirp=namelist[i];
 
     namelen = isInFile(dirp->d_name); // check if the file is *.in or not
     if (namelen == 0)
       continue;
-
+    mark=mark_of_name(dirp->d_name);
+    total_mark+=mark;
     if (http_judge && http_download && (!data_list_has(dirp->d_name)))
       continue;
 
     prepare_files(dirp->d_name, namelen, infile, p_id, work_dir, outfile,
                   userfile, runner_id);
-    if (access(outfile, 0) == -1)
+    if (access(outfile, R_OK) == -1)
     {
       //out file does not exist
       char error[BUFFER_SIZE];
@@ -3465,24 +3695,26 @@ int main(int argc, char **argv)
 
     init_syscalls_limits(lang);
 
-    pid_t pidApp = fork();
+    pid_t pidApp = fork();                  //创建子进程，这里程序将自身复制一份，两份同时运行，进程根据返回值确定自己的身份
 
-    if (pidApp == 0)
+    if (pidApp == 0)                        //返回值是0，我就是子进程 
     {
 
-      run_solution(lang, work_dir, time_lmt, usedtime, mem_lmt,infile);
+      run_solution(lang, work_dir, time_lmt, usedtime, mem_lmt,infile,p_id);
     }
     else
-    {
+    {                                       //返回值非0 ，我是父进程，返回值就是上面那个子进程的pid
 
       //num_of_test++;
-
+      //看护子进程，不让他做奇怪的事
       watch_solution(pidApp, infile, ACflg, isspj, userfile, outfile,
                solution_id, lang, topmemory, mem_lmt, usedtime, time_lmt,
                p_id, PEflg, work_dir);
+      kill(pidApp,9);//kill it anyway
       printf("%s: mem=%d time=%d\n",infile+strlen(oj_home)+5,topmemory,usedtime);  
       total_time+=usedtime;
       printf("time:%d/%d\n",usedtime,total_time);
+      //判断用户程序输出是否正确，给出结果
       judge_solution(ACflg, usedtime, time_lmt, isspj, p_id, infile,
                outfile, userfile, PEflg, lang, work_dir, topmemory,
                mem_lmt, solution_id, num_of_test);
@@ -3500,6 +3732,7 @@ int main(int argc, char **argv)
       if (ACflg == OJ_AC)
       {
         ++pass_rate;
+        get_mark+=mark;
       }
       if (finalACflg < ACflg)
       {
@@ -3508,6 +3741,9 @@ int main(int argc, char **argv)
 
       ACflg = OJ_AC;
     }
+#ifdef _mysql_h
+    if (!http_judge) check_mysql_conn();
+#endif
   }
   if (ACflg == OJ_AC && PEflg == OJ_PE)
     ACflg = OJ_PE;
@@ -3525,6 +3761,9 @@ int main(int argc, char **argv)
   {
     if (DEBUG)
       printf("add RE info of %d..... \n", solution_id);
+      FILE *df=fopen("error.out","a");
+              fprintf(df,"----time_space_table:----\n%s\n",time_space_table);
+              fclose(df);
     addreinfo(solution_id);
   }
   if (use_max_time)
@@ -3535,14 +3774,20 @@ int main(int argc, char **argv)
     if(DEBUG) printf("use total time:%d\n",total_time);
     usedtime = total_time;
   }
-  if(usedtime > time_lmt * 1000)
-  {
+/*  
+  if(usedtime > time_lmt * 1000) {                  // show real time cost
     usedtime = time_lmt * 1000;
   }
+*/
   if (oi_mode)
   {
-    if (num_of_test > 0)
+    if (num_of_test > 0){
       pass_rate /= num_of_test;
+    }
+    if (total_mark > 0 ){
+      pass_rate =get_mark;
+      pass_rate /= total_mark;
+    }
     update_solution(solution_id, finalACflg, usedtime, topmemory >> 10, sim,
                     sim_s_id, pass_rate);
   }
@@ -3557,8 +3802,8 @@ int main(int argc, char **argv)
   fprintf(df,"time_space_table:\n%s\n",time_space_table);
   fclose(df);
   if(DEBUG) printf("ACflg:%d\n",ACflg);
-  if(DEBUG) printf("finalACflg:%d\n",finalACflg);
-  if(ACflg != 10 && finalACflg!= 10 ) adddiffinfo(solution_id);
+  printf("final result:%d\n",finalACflg);
+  if(ACflg != OJ_RE && finalACflg!= OJ_RE ) adddiffinfo(solution_id);
   if(!turbo_mode)update_user(user_id);
   if(!turbo_mode)update_problem(p_id,cid);
   clean_workdir(work_dir);
@@ -3573,6 +3818,7 @@ int main(int argc, char **argv)
   {
     print_call_array();
   }
-  closedir(dp);
+  //closedir(dp);
+  free(namelist);
   return 0;
 }
