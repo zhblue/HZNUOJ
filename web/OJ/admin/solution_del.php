@@ -8,14 +8,16 @@ if (!HAS_PRI("inner_function")) {
   require_once("../include/check_post_key.php");
   $sid = intval($mysqli->real_escape_string($_POST['sid']));
   if($sid>0){
+    $sql="DELETE FROM `sim` WHERE `s_id`='$sid' OR `sim_s_id`='$sid'";
+    $mysqli->query($sql);
     $sql="DELETE FROM `source_code_user` WHERE `solution_id`='$sid'";
     $mysqli->query($sql);
     $sql="DELETE FROM `source_code` WHERE `solution_id`='$sid'";
     $mysqli->query($sql);
     $sql="DELETE FROM `solution` WHERE `solution_id`='$sid'";
     $mysqli->query($sql);
-    echo $mysqli->affected_rows . " source code(RUNID=$sid) deleted!";
     if($mysqli->affected_rows>0){
+        echo $mysqli->affected_rows . " source code(RUNID=$sid) deleted!";
         $sql="SELECT max(`solution_id`) FROM `solution`" ;
         $max_sid=$mysqli->query($sql)->fetch_row()[0];
         $max_sid++;
