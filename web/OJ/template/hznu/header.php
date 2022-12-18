@@ -121,16 +121,6 @@ if(isset($OJ_show_tag) && $OJ_show_tag){
         <ul class="am-nav am-nav-pills am-topbar-nav">
 
         <?php $page_name=basename($_SERVER['SCRIPT_NAME']);?>
-          <!-- 我的Contest部分 start -->
-        <?php if (isset($_SESSION['user_id'])) { ?>
-          <li <?php
-          if($page_name=="contest.php" && isset($_GET['my'])) {
-              echo "class='am-active'";
-              $_SESSION['my'] = "?my";
-          }
-          ?>><a href="./contest.php?my"><?php echo $MSG_MY_CONTESTS ?></a></li>
-        <?php } ?>
-          <!-- 我的Contest部分 end -->
           <!-- Contest部分 start -->
           <li <?php
           if($page_name=="contest.php" && !isset($_GET['my'])) {
@@ -139,6 +129,16 @@ if(isset($OJ_show_tag) && $OJ_show_tag){
           }
           ?>><a href="./contest.php"><?php echo $MSG_CONTEST ?></a></li>
           <!-- Contest部分 end -->
+          <!-- 我的Contest部分 start -->
+        <?php if (isset($_SESSION['user_id']) && (isset($OJ_login2mycontest) && $OJ_login2mycontest || IS_ADMIN($_SESSION['user_id']))) { ?>
+          <li <?php
+          if($page_name=="contest.php" && isset($_GET['my'])) {
+              echo "class='am-active'";
+              $_SESSION['my'] = "?my";
+          }
+          ?>><a href="./contest.php?my"><?php echo $MSG_MY_CONTESTS ?></a></li>
+        <?php } ?>
+          <!-- 我的Contest部分 end -->
           <?php 
         if (!isset($_SESSION['contest_id'])) { ?>
            <!-- course部分 start -->
