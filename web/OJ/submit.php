@@ -81,7 +81,7 @@ if (isset($_POST['id'])) {
         $test_run=($cid<0);
 	if($test_run) $cid=-$cid;
 	// check user if private
-	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND date_add(`end_time`, interval ". getContestEndtime($user_id, $cid)['overTime']." minute)>=now()";
+	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND `defunct`='N' AND date_add(`end_time`, interval ". getContestEndtime($user_id, $cid)['overTime']." minute)>=now()";
 	$result=$mysqli->query($sql);
 	$rows_cnt=$result->num_rows;
 	if ($rows_cnt!=1){
