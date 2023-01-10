@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS `contest` (
   `isTop` tinyint(1) NOT NULL DEFAULT '0',
   `room_id` INT(11) NOT NULL DEFAULT '0',
   `start_by_login_time` tinyint(1) NOT NULL DEFAULT '0',
+  `duration` DECIMAL(10,1) NOT NULL DEFAULT '0' ,
   `enable_overtime` TINYINT(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contest_id`),
   KEY `contest_id` (`contest_id`,`defunct`,`private`,`defunct_TA`,`open_source`) USING BTREE,

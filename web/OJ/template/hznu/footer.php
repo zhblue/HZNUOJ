@@ -85,7 +85,7 @@
       // The javescript's timestamp is in milliseconds, but PHP's is in seconds.
       var now = function() { return Math.floor(Date.now() / 1000); };
       var contest_len = <?php echo $contest_len ?>;
-      var begin_time = <?php echo $contest_time[0] ?>;
+      var begin_time = <?php echo $contest_starttime?>;
       var warnning_percent = <?php echo $warnning_percent ?>;
       var lock_time=-1;
       <?php if ($unlock!=1){ ?>

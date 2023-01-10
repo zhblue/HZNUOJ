@@ -152,7 +152,7 @@
   $MSG_Activity ="Activity";
   $MSG_Idle = "Idle";
   $MSG_OverTime = "Set OverTime";
-  $MSG_start_by_login_time = "Calculate the {$MSG_PROBLEM}'s completion time based on user's login time";
+  $MSG_start_by_login_time = "user's login time of contest is start time";
   $MSG_enable_overtime = "Enable set overtime to end someone's {$MSG_CONTEST}";
   $MSG_exportScore = "Score Export";
   $MSG_ScoreMode = "Statistics Mode";

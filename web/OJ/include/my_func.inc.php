@@ -220,7 +220,7 @@ function canSeeSource($sid) {
     $sql = "SELECT DISTINCT(contest_id) AS cid FROM contest_problem WHERE problem_id='$pid'";
     $result = $mysqli->query($sql);
     while ($row_cid = $result->fetch_object()) {
-        if (is_running($row_cid->cid)) {
+        if (getContestEndtime($_SESSION['user_id'], $row_cid->cid)>time()) {
             $irc = true;
             if(isset($_SESSION['c'.$row_cid->cid]) && $row_cid->cid != $cid){
                 $have_other_not_closed = true;
@@ -241,7 +241,7 @@ function canSeeSource($sid) {
         // 是本人，如果该题还在他的未结束竞赛中时，不能查看以前提交的该题代码
         $ok = HAS_PRI("see_source_in_contest") || HAS_PRI("see_source_out_of_contest");
         if(!$ok) {
-            if (is_running(intval($cid))) { // 当前提交属于进行中的比赛，可以看
+            if (getContestEndtime($_SESSION['user_id'], $cid)>time()) { // 当前提交属于进行中的比赛，可以看
                 $need_check_using=false;
             } else if (is_numeric($cid)) {// 当前提交属于已经结束的比赛，考察是否有进行中的比赛在使用该题。
                 $need_check_using=true;
@@ -257,7 +257,7 @@ function canSeeSource($sid) {
         }
         return $ok;
     } else { // 不是本人的情况下
-        if (is_running(intval($cid))) { // the problem is in running contest
+        if (getContestEndtime($_SESSION['user_id'], $cid)>time()) { // the problem is in running contest
             if (HAS_PRI("see_source_in_contest")) return true;
             $sql = "SELECT 1 FROM solution WHERE result=4 AND problem_id='$pid' AND contest_id='$cid' AND user_id='".$_SESSION['user_id']."'";
             $result = $mysqli->query($sql);
@@ -585,21 +585,19 @@ function getPCNameByUserID($uid, $contestid, $room_id){
 
 function getContestEndtime($uid, $contestid){
     global $mysqli;
-    $sql="SELECT UNIX_TIMESTAMP(end_time) AS end_time,`enable_overtime`,cl.`overTime` FROM contest c
+    $sql="SELECT UNIX_TIMESTAMP(end_time) AS end_time,`start_by_login_time`,`duration`,`enable_overtime`,cl.`overTime`,cl.`startTime` FROM contest c
         LEFT JOIN (SELECT * FROM `contest_loginTime` WHERE `contest_loginTime`.`user_id`='$uid') cl ON cl.contest_id=c.contest_id
-        WHERE c.contest_id='$contestid' AND `defunct`='N'";
-    $r=array();
+        WHERE c.contest_id='".intval($contestid)."' AND `defunct`='N'";
+    $r=0;
     if($row=$mysqli->query($sql)->fetch_object()) {
+        if($row->start_by_login_time && $row->duration > 0 && !is_null($row->startTime)){
+            $r = strtotime($row->startTime) + intval(floatval($row->duration)*3600);//登入时间+持续时间;
+        } else {
+            $r = $row->end_time;
+        }
         if($row->enable_overtime){
-            $r['endtime']=$row->end_time+intval($row->overTime)*60;
-            $r['overTime']=intval($row->overTime);
-          } else {
-            $r['endtime']=$row->end_time;
-            $r['overTime']=0;
-          }
-    } else {
-        $r['endtime']=0;
-        $r['overTime']=0;
+            $r += intval($row->overTime)*60;
+        }
     }
     return $r;
 }

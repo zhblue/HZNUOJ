@@ -160,3 +160,6 @@ CREATE TABLE IF NOT EXISTS `contest_loginTime` (
   PRIMARY KEY ( `contest_id`, `user_id`) ,
   KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--20221219
+ALTER TABLE `contest` ADD `duration` DECIMAL(10,1) NOT NULL DEFAULT '0' AFTER `start_by_login_time`;

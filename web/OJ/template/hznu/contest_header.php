@@ -55,31 +55,42 @@ if(isset($_GET['cid'])){
   $warnning_percent=90;
   $cid = $mysqli->real_escape_string($_GET['cid']);
   $sql="SELECT UNIX_TIMESTAMP(start_time) AS start_time, UNIX_TIMESTAMP(end_time) AS end_time,`unlock`,lock_time,title,user_limit
-        ,c.room_id,`private`,`defunct`,i.`seat_forbid_multiUser_login`,i.`user_forbid_multiIP_login`,`start_by_login_time`,`enable_overtime`,cl.`overTime` FROM contest c
+        ,c.room_id,`private`,`defunct`,i.`seat_forbid_multiUser_login`,i.`user_forbid_multiIP_login`,`start_by_login_time`,`duration`,`enable_overtime`,cl.`overTime`,cl.`startTime` FROM contest c
         LEFT JOIN ip_classroom i ON c.room_id=i.room_id 
         LEFT JOIN (SELECT * FROM `contest_loginTime` WHERE `contest_loginTime`.`user_id`='$user_id2') cl ON cl.contest_id=c.contest_id
         WHERE c.contest_id='$cid'";
   $res=$mysqli->query($sql);
   $contest_time=$res->fetch_array();
-  if($contest_time['enable_overtime']){
-    $contest_endtime=$contest_time['end_time']+intval($contest_time['overTime'])*60;
-  } else $contest_endtime=$contest_time['end_time'];
-  $contest_len=$contest_endtime-$contest_time['start_time'];
-  if($contest_time['start_by_login_time'] && $user_id2!="" && is_running($cid) && !HAS_PRI("edit_contest")){//记录contest登入时间
+
+  $now = time();
+  $loginTime = "";
+  if($contest_time['start_by_login_time'] && $user_id2!="" && !HAS_PRI("edit_contest")){//记录contest登入时间
     $sql = "SELECT `user_id` FROM `solution` WHERE contest_id='$cid' AND `user_id`='$user_id2' LIMIT 1";
-    if($mysqli->query($sql)->num_rows==0){//还没提交代码
-      $sql = "SELECT `user_id` FROM `contest_loginTime` WHERE contest_id='$cid' AND `user_id`='$user_id2' AND (NOT ISNULL(`startTime`) OR `startTime`='')";
-      if($mysqli->query($sql)->num_rows==0){//而且还没有登入记录，就记录contest登入时间
-        $sql = "INSERT INTO `contest_loginTime`(`contest_id`,`user_id`,`startTime`) VALUES('$cid','$user_id2',NOW()) ON DUPLICATE KEY UPDATE `startTime`=NOW()";
+    if($mysqli->query($sql)->num_rows==0 && is_null($contest_time['startTime'])){//还没提交代码而且还没有登入记录，就记录contest登入时间
+      if(is_running($cid)){
+        $loginTime = date('Y-m-d H:i:s',$now);
+        $sql = "INSERT INTO `contest_loginTime`(`contest_id`,`user_id`,`startTime`) VALUES('$cid','$user_id2','$loginTime') ON DUPLICATE KEY UPDATE `startTime`='$loginTime'";
         $mysqli->query($sql);
       }
+    } else {
+      if(!is_null($contest_time['startTime'])) $loginTime = $contest_time['startTime'];
     }
   }
-  $now=time();
+  $contest_starttime = $contest_time['start_time'];
+  $contest_endtime=$contest_time['end_time'];
+  if($contest_time['start_by_login_time'] && $contest_time['duration'] > 0 && $loginTime != ""){
+    $contest_starttime = strtotime($loginTime);
+    $contest_endtime = strtotime($loginTime) + intval(floatval($contest_time['duration'])*3600);//登入时间+持续时间
+  }
+  if($contest_time['enable_overtime']){
+    $contest_endtime = $contest_endtime + intval($contest_time['overTime'])*60;
+  }
+
   $bar_percent=0;
   $is_started=false;
-  if($now>=$contest_time[0])$is_started=true;
-  $dur=$now-$contest_time[0];
+  if($now>=$contest_time['start_time'])$is_started=true;
+  $dur=$now-$contest_starttime;
+  $contest_len = $contest_endtime - $contest_starttime;
   if($dur>=$contest_len)$dur=$contest_len;
   $bar_percent=$dur/$contest_len*100;
   
@@ -256,6 +267,14 @@ BOT;
         }
         ?>
         <!-- 用户部分 end -->
+        <?php 
+        if($contest_time['duration'] > 0){
+          $tmp = floatval($contest_time['duration'])*60+$contest_time['overTime']*$contest_time['enable_overtime'];
+          if(floor($tmp / 60) > 0) $h .= floor($tmp / 60)." 小时 ";
+          if($tmp % 60 > 0) $h .= $tmp % 60 ." 分钟";
+        }
+        
+        ?>
     </div>
   </div>
 </header>
@@ -268,10 +287,10 @@ BOT;
   <div class="am-g" style="padding-bottom: 7px;">
     <div class="am-u-sm-3">
       <span class="text-bold"><?php echo $MSG_StartTime ?>: </span>
-      <span><?php echo date("Y-m-d, H:i:s",$contest_time[0]) ?></span>
+      <span><?php echo date("Y-m-d, H:i:s",$contest_starttime) ?></span>
     </div>
     <div class="am-u-sm-6 am-text-center">
-      <span class="text-bold" style="font-size: large;"><?php echo $contest_title ?></span>
+      <span class="text-bold" style="font-size: large;"><?php echo $contest_title; if($h!="") echo "【答题时间：".$h."】"; ?></span>
     </div>
     <div class="am-u-sm-3 am-text-right">
       <span class="text-bold"><?php echo $MSG_EndTime ?>: </span>
@@ -287,7 +306,7 @@ BOT;
     </div>
   </div>
 
-  <?php if ($is_started): ?>
+  <?php if ($is_started){ ?>
   <div class="am-g">
     <div class="am-u-sm-4">
       <span class="text-bold"><?php echo $MSG_TimeElapsed ?>: </span>
@@ -304,14 +323,25 @@ BOT;
       <span id="time_remaining"></span>
     </div>
   </div>
-  <?php endif ?>
-    <?php if(HAS_PRI("edit_contest")) {
+  <?php } 
+    if(HAS_PRI("edit_contest")) {
         echo <<<HTML
         <div align="center" style="margin-top: 5px;">
           <span class="am-badge am-badge-success am-text-lg">
             <a href="./admin/contest_edit.php?cid={$_GET['cid']}" style="color: white;">$MSG_EDIT</a>
           </span>
         </div>
+HTML;
+    } else if($contest_time['start_by_login_time']&& $loginTime != ""){
+      if($contest_time['duration'] > 0){
+        $h = "从 ".$loginTime." 开始计时，答题时间为 ".$h;
+      } else {
+        $h = "从 ".$loginTime." 开始计时";
+      }
+      echo <<<HTML
+      <div align="center" style="margin-top: 5px;">
+        <label> $h </label>
+      </div>
 HTML;
     }
 

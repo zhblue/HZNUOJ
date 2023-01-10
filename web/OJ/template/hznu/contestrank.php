@@ -194,7 +194,13 @@
             echo "</span>";
           }
           echo "</td>\n";
-          echo "<td class='rankcell'><div class='nick'>$col3</div></td>\n";
+          echo "<td class='rankcell'><div class='nick'";
+          if(HAS_PRI("edit_contest") && $start_by_login_time && $user_start_time[$uuid]!=""){
+            echo " style='cursor: pointer;' title='登入时间：".date('m-d H:i',$user_start_time[$uuid]);
+            if($contest_time['duration']!= 0) echo "\n结束时间：".date('m-d H:i',$user_start_time[$uuid]+intval(floatval($contest_time['duration'])*3600)+intval($user_over_time[$uuid])*60);
+            echo "'";
+          } 
+          echo ">$col3</div></td>\n";
           echo "<td class='rankcell'>$uscore</td>\n";
           echo "<td class='rankcell'><a href=\"status.php?user_id=$uuid&cid=$cid\">$usolved</a></td>\n";
           echo "<td class='rankcell'>".sec2str($U[$i]->time)."</td>";
@@ -345,7 +351,11 @@ for($i=0; $i<2*count($pid_nums); $i+=2){
     context+="<div class='am-form-group am-form-icon am-form-group-sm'><i class='am-icon-clock-o'></i><input class='am-form-field' type='number' style='width:150px; margin-left: 5px;' id='overtime-value' name='overtime' min='-99' max='99' value='"+over_time+"' required /></div>";
     context+="<div class='am-form-group' style='margin-left: 5px;'>分钟</div>";
     context+="<input type='button' style='margin-left: 5px;' name='submit' value='确定' class='am-btn am-btn-primary am-btn-sm' onclick='set_overtime(this,\""+uid+"\")'></form>";
-    context+="注：用于设置用户在本次<?php echo $MSG_CONTEST ?>结束时间的加时，正值增、负值减，加时0分钟则按统一时间在【<?php echo date("Y-m-d H:i:s", $contest_endtime) ?>】结束。</div>";
+    <?php if($start_by_login_time && $contest_time['duration']!= 0) { ?>
+      context+="注：用于设置用户在本次<?php echo $MSG_CONTEST ?>结束时间的加时，正值增、负值减，加时0分钟则统一在账号登入后【<?php echo $contest_time['duration'] ?>小时】结束。</div>";
+    <?php } else { ?>
+      context+="注：用于设置用户在本次<?php echo $MSG_CONTEST ?>结束时间的加时，正值增、负值减，加时0分钟则按统一时间在【<?php echo date("Y-m-d H:i:s", $contest_endtime) ?>】结束。</div>";
+    <?php }  ?>
     $("#modal-overtime-bd").html(context);
   });
 function set_overtime(btn, uid){

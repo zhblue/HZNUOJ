@@ -87,7 +87,7 @@ WHERE
 
     /* 判断是否有错误 start */
     $error_flag = false;
-    if (getContestEndtime($uid, $cid)['endtime']<time()){
+    if (getContestEndtime($uid, $cid)<time()){
       $view_errors = "<font style='color:red;'>$MSG_ContestIsClosed</font>";
       $error_flag = true;
     }

@@ -113,7 +113,7 @@ while($uid=$res->fetch_array()[0]){
 }
 
 
-$sql="SELECT `start_time`,`title`,`end_time`,user_limit,lock_time,`unlock`,first_prize,second_prize,third_prize,room_id,start_by_login_time,enable_overtime FROM `contest` WHERE `contest_id`='$cid'";
+$sql="SELECT * FROM `contest` WHERE `contest_id`='$cid'";
 if($OJ_MEMCACHE){
     require("./include/memcache.php");
     $result = $mysqli->query_cache($sql);// or die("Error! ".$mysqli->error);
@@ -145,7 +145,7 @@ if ($start_time==0){
     exit(0);
 }
 if ($start_time>time()){
-    $view_errors= "Contest Not Started!";
+    $view_errors= $MSG_notStart ;
     require("template/".$OJ_TEMPLATE."/error.php");
     exit(0);
 }

@@ -47,6 +47,7 @@
     $second_prize = $mysqli->real_escape_string($_POST['second_prize']);
     $third_prize = $mysqli->real_escape_string($_POST['third_prize']);
     $start_by_login_time = intval(($_POST['start_by_login_time']));
+    $duration = floatval(($_POST['duration']));
     $enable_overtime = intval(($_POST['enable_overtime']));
     if (get_magic_quotes_gpc ()){
       $title = stripslashes ($title);
@@ -61,8 +62,8 @@
 	  //echo $t." ";
       $langmask+=1<<$t;
     }
-    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`,`start_by_login_time`,`enable_overtime`)
-          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize','$start_by_login_time','$enable_overtime')";
+    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`,`start_by_login_time`,`duration`,`enable_overtime`)
+          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize','$start_by_login_time','$duration','$enable_overtime')";
   //echo $sql;
   $mysqli->query($sql) or die($mysqli->error);
   //添加contest记录 end  
@@ -157,6 +158,7 @@ else{
   $description=str_replace("<br />\r\n<!---->","",$row['description']);//kindeditor会在空白内容的末尾加入<br />\r\n<!---->
   $description = str_replace("<!---->","",$description);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
   $start_by_login_time=$row['start_by_login_time'];
+  $duration=$row['duration'];
   $enable_overtime=$row['enable_overtime'];
 	$title=htmlentities($row['title'],ENT_QUOTES,"UTF-8")." copy";
       $result->free();
@@ -310,6 +312,7 @@ else if(isset($_POST['problem2contest'])){
   </select>&nbsp;&nbsp;
   <strong><?php echo $MSG_LockTime ?>:</strong>&nbsp;<input name='lock_time' id='lock_time' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($lock_time)&&$lock_time!="") {if($unlock==0) echo ceil($lock_time/3600); else echo $lock_time; } else echo 0?>" maxlength="2" required>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label><input type='checkbox' name='start_by_login_time' value='1' <?php if($start_by_login_time) echo 'checked'?> />&nbsp;<?php echo $MSG_start_by_login_time ?></label>
+  <label>，持续 <input name='duration' type='number' style='width:50px' min="0" max="100" step="0.1" value="<?php if(isset($duration)&&$duration!="") echo $duration; else echo 0?>" maxlength="5" required> 小时</label>
   </p>
   <p align=left>
   <strong><?php echo $MSG_GOLD ?>:</strong>&nbsp;<input name='first_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($first_prize)&&$first_prize!="") echo $first_prize; else echo 1?>" maxlength="2" required>&nbsp;&nbsp;

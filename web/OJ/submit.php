@@ -81,10 +81,10 @@ if (isset($_POST['id'])) {
         $test_run=($cid<0);
 	if($test_run) $cid=-$cid;
 	// check user if private
-	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND `defunct`='N' AND date_add(`end_time`, interval ". getContestEndtime($user_id, $cid)['overTime']." minute)>=now()";
+	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND `defunct`='N'";
 	$result=$mysqli->query($sql);
 	$rows_cnt=$result->num_rows;
-	if ($rows_cnt!=1){
+	if ($rows_cnt!=1 || getContestEndtime($user_id, $cid)<time()){
 		$result->free();
 		$view_errors="<span class='am-text-danger'>You Can't Submit Now Because Your are not invited by the contest or $MSG_ContestIsClosed</span>";
 		$_GET['cid']=$cid;

@@ -55,6 +55,11 @@ if (isset($_GET['cid'])){
             require_once "template/".$OJ_TEMPLATE."/footer.php";
             exit(0);
         }
+        if (strtotime($row->start_time)>time() && !HAS_PRI("edit_contest")){
+          $view_errors= $MSG_notStart ;
+          require("template/".$OJ_TEMPLATE."/error.php");
+          exit(0);
+        }
         $view_private=$row->private;
         if($password!=""&&$password==$row->password) $_SESSION['c'.$cid]=true;
         if ($row->private && !isset($_SESSION['c'.$cid])) $contest_ok=false;
@@ -194,7 +199,13 @@ if (isset($_GET['cid'])){
     while ($row=$result->fetch_object()){
         $view_contest[$i][0]= $row->contest_id;
         if(trim($row->title)=="") $row->title=$MSG_CONTEST.$row->contest_id;
-        $view_contest[$i][1]= "<a href='contest.php?cid=$row->contest_id'>$row->title</a>";
+        $view_contest[$i][1]= "<a href='contest.php?cid=$row->contest_id'>$row->title";
+        if($row->start_by_login_time){
+          $view_contest[$i][1] .= "<lable title='点击进入即开始计时'>&nbsp;&nbsp;&nbsp;&nbsp;<i class='am-icon-clock-o am-icon-sm'></i> ";
+          if($row->duration > 0) $view_contest[$i][1] .= "答题时间：".round($row->duration, 1) ." h";
+          $view_contest[$i][1] .= "</lable>";
+        }
+        $view_contest[$i][1] .= "</a>";
         if($row->isTop) $view_contest[$i][1].="<span title='$MSG_Top'>&nbsp;<i class='am-icon-arrow-up'></i>";
         $start_time=strtotime($row->start_time);
         $end_time=strtotime($row->end_time);

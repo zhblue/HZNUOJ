@@ -152,7 +152,7 @@
   $MSG_Activity ="活动";
   $MSG_Idle = "闲置";
   $MSG_OverTime = "加时设置";
-  $MSG_start_by_login_time = "以用户登入{$MSG_CONTEST}的时间为基准计算{$MSG_PROBLEM}的完成时间（影响排名）";
+  $MSG_start_by_login_time = "以用户首次进入{$MSG_CONTEST}的时间做为开始时间";
   $MSG_enable_overtime = "允许以加时方式调整个别账号的{$MSG_CONTEST}结束时间";
   $MSG_exportScore = "成绩导出";
   $MSG_ScoreMode = "统计模式";
@@ -240,7 +240,7 @@
   $MSG_SolutionVideo = "帮助视频";
   $MSG_WatchVideo = "点击观看帮助视频";
   $MSG_ToggleSamples = "隐藏/显示";
-  $MSG_ShowAfterTrying = "错误几次之后显示本样例";
+  $MSG_ShowAfterTrying = "提交几次之后显示本样例";
   $MSG_AddSapmple = "增加一组样例";
   $MSG_RemoveSample = "删除最后一组样例";
   $MSG_SampleDataIsUpdated = "测试样例文件已更新！";
