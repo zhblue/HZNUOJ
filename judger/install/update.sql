@@ -163,3 +163,6 @@ CREATE TABLE IF NOT EXISTS `contest_loginTime` (
 
 --20221219
 ALTER TABLE `contest` ADD `duration` DECIMAL(10,1) NOT NULL DEFAULT '0' AFTER `start_by_login_time`;
+
+--20230110
+ALTER TABLE `contest` ADD `enable_points_in_contest` TINYINT(1) NOT NULL DEFAULT '1' AFTER `enable_overtime` ;

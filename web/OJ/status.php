@@ -249,7 +249,7 @@
       if(isset($cid)){
         $view_status[$i][2].= "<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".PID($row['num'])."</a>";
       }else{
-		$view_status[$i][2].= "<a target='_blank' href='problem.php?id=".$row['problem_id']."'>".$row['problem_id']."</a>";
+		    $view_status[$i][2].= "<a target='_blank' href='problem.php?id=".$row['problem_id']."'>".$row['problem_id']."</a>";
         $view_status[$i][2].= "&nbsp;(<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".$row['contest_id']."-".PID($row['num'])."</a>)";
 	  }
       $view_status[$i][2].="</div>";
@@ -340,8 +340,8 @@
       if (canSeeSource($row['solution_id'])) { // 可以查看代码
         $view_status[$i][6]= "<a target='_blank' href=showsource.php?id=".$row['solution_id'].">".$language_name[$row['language']]."</a>";
         if($row["problem_id"]>0){
-          if (isset($cid)) {
-            $view_status[$i][6].= "/<a href=\"submitpage.php?cid=".$cid."&pid=".$row['num']."&sid=".$row['solution_id']."\" $target>$MSG_EDIT</a>";
+          if ($row['contest_id']) {
+            $view_status[$i][6].= "/<a href=\"submitpage.php?cid=".$row['contest_id']."&pid=".$row['num']."&sid=".$row['solution_id']."\" $target>$MSG_EDIT</a>";
           }else{
             $view_status[$i][6].= "/<a href=\"submitpage.php?id=".$row['problem_id']."&sid=".$row['solution_id']."\" $target>$MSG_EDIT</a>";
           }

@@ -316,6 +316,7 @@
   $MSG_GOLD="金牌数量"; 
   $MSG_SILVER="银牌数量";
   $MSG_BRONZE="铜牌数量";
+  $MSG_enable_points_in_contest="启用积分";
   
   $MSG_HELP_exportScore = "导出指定班级的普通账号（非{$MSG_TEAM}）在各个{$MSG_CONTEST}的答题情况。";
   $MSG_HELP_TeamAccount_forbid = $MSG_TEAM."不能访问此页！";

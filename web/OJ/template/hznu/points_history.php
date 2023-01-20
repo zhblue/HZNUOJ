@@ -97,7 +97,7 @@ function generate_url($data){
         }
       ?>。</li><li>若提交的代码错误，没有积分奖励
       <?php if($OJ_points_Wrong != 0){
-          echo "，并加罚 ".$points_Wrong." <span class='am-icon-apple'></span>";
+          echo "，并加罚 ".$OJ_points_Wrong." <span class='am-icon-apple'></span>";
         }
       ?>。</li>
           <li>不积跬步，无以至千里；不积小流，无以成江海。请充分思考，将代码考虑成熟、测试完备后再行提交。<br>速度快不能证明你强，又快又准才是真本事。</li>

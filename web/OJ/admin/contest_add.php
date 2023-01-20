@@ -49,6 +49,7 @@
     $start_by_login_time = intval(($_POST['start_by_login_time']));
     $duration = floatval(($_POST['duration']));
     $enable_overtime = intval(($_POST['enable_overtime']));
+    $enable_points_in_contest = intval(($_POST['enable_points_in_contest']));
     if (get_magic_quotes_gpc ()){
       $title = stripslashes ($title);
       $private = stripslashes ($private);
@@ -62,8 +63,8 @@
 	  //echo $t." ";
       $langmask+=1<<$t;
     }
-    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`,`start_by_login_time`,`duration`,`enable_overtime`)
-          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize','$start_by_login_time','$duration','$enable_overtime')";
+    $sql="INSERT INTO `contest`(`title`,`start_time`,`end_time`,`private`,`langmask`,`description`,`password`, user_limit, room_id, open_source, practice,`user_id`,`unlock`,`lock_time`,`first_prize`,`second_prize`,`third_prize`,`start_by_login_time`,`duration`,`enable_overtime`,`enable_points_in_contest`)
+          VALUES('$title','$starttime','$endtime','$private',$langmask,'$description','$password', '$user_limit', '$room_id', '$open_source', '$practice', '$user_id','$unlock','$lock_time','$first_prize','$second_prize','$third_prize','$start_by_login_time','$duration','$enable_overtime','$enable_points_in_contest')";
   //echo $sql;
   $mysqli->query($sql) or die($mysqli->error);
   //添加contest记录 end  
@@ -160,6 +161,7 @@ else{
   $start_by_login_time=$row['start_by_login_time'];
   $duration=$row['duration'];
   $enable_overtime=$row['enable_overtime'];
+  $enable_points_in_contest=$row['enable_points_in_contest'];
 	$title=htmlentities($row['title'],ENT_QUOTES,"UTF-8")." copy";
       $result->free();
       $plist="";
@@ -285,7 +287,7 @@ else if(isset($_POST['problem2contest'])){
      echo "<option value='1'>$MSG_Private</option>";
   } ?>
   </select>&nbsp;&nbsp;  
-  <strong><?php echo $MSG_PASSWORD ?>:</strong>&nbsp;<input name=password type=text style='width:150px' value="<?php echo htmlentities($password,ENT_QUOTES,'utf-8')?>" pattern="^[_a-zA-Z0-9]{1,15}$" maxlength="15">&nbsp;&nbsp;
+  <strong><?php echo $MSG_PASSWORD ?>&nbsp;:</strong>&nbsp;<input name=password type=text style='width:150px' value="<?php echo htmlentities($password,ENT_QUOTES,'utf-8')?>" pattern="^[_a-zA-Z0-9]{1,15}$" maxlength="15">&nbsp;&nbsp;
   <strong><?php echo $MSG_OpenSource ?>&nbsp;:</strong>&nbsp;
   <select name='open_source' style='width:50px'>
    <?php if(isset($_GET['cid'])){ ?>
@@ -296,6 +298,18 @@ else if(isset($_POST['problem2contest'])){
      echo "<option value='N' selected='selected'>No</option>";
   } ?>
   </select>
+  <?php if (isset($OJ_points_enable) && $OJ_points_enable) {?>
+  &nbsp;&nbsp;<strong><?php echo $MSG_enable_points_in_contest ?>&nbsp;:</strong>&nbsp;
+  <select name='enable_points_in_contest' style='width:50px'>
+   <?php if(isset($_GET['cid'])){ ?>
+    <option value='1' <?php echo $enable_points_in_contest=='1'?'selected=selected':''?>>Yes</option>
+    <option value='0' <?php echo $enable_points_in_contest=='0'?'selected=selected':''?>>No</option>
+  <?php  }else {
+	   echo "<option value='1' selected='selected'>Yes</option>";
+     echo "<option value='0'>No</option>";
+  } ?>
+  </select>
+  <?php } ?>
   </p>
   <p align=left>
     <strong><?php echo $MSG_LockBoard ?>&nbsp;:</strong>&nbsp;
@@ -310,14 +324,14 @@ else if(isset($_POST['problem2contest'])){
      echo "<option value='2'>$MSG_LockByRate</option>";
   } ?>
   </select>&nbsp;&nbsp;
-  <strong><?php echo $MSG_LockTime ?>:</strong>&nbsp;<input name='lock_time' id='lock_time' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($lock_time)&&$lock_time!="") {if($unlock==0) echo ceil($lock_time/3600); else echo $lock_time; } else echo 0?>" maxlength="2" required>
+  <strong><?php echo $MSG_LockTime ?>&nbsp;:</strong>&nbsp;<input name='lock_time' id='lock_time' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($lock_time)&&$lock_time!="") {if($unlock==0) echo ceil($lock_time/3600); else echo $lock_time; } else echo 0?>" maxlength="2" required>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label><input type='checkbox' name='start_by_login_time' value='1' <?php if($start_by_login_time) echo 'checked'?> />&nbsp;<?php echo $MSG_start_by_login_time ?></label>
   <label>，持续 <input name='duration' type='number' style='width:50px' min="0" max="100" step="0.1" value="<?php if(isset($duration)&&$duration!="") echo $duration; else echo 0?>" maxlength="5" required> 小时</label>
   </p>
   <p align=left>
-  <strong><?php echo $MSG_GOLD ?>:</strong>&nbsp;<input name='first_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($first_prize)&&$first_prize!="") echo $first_prize; else echo 1?>" maxlength="2" required>&nbsp;&nbsp;
-  <strong><?php echo $MSG_SILVER ?>:</strong>&nbsp;<input name='second_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($second_prize)&&$second_prize!="") echo $second_prize; else echo 3?>" maxlength="2" required>&nbsp;&nbsp;
-  <strong><?php echo $MSG_BRONZE ?>:</strong>&nbsp;<input name='third_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($third_prize)&&$third_prize!="") echo $third_prize; else echo 5?>" maxlength="2" required>
+  <strong><?php echo $MSG_GOLD ?>&nbsp;:</strong>&nbsp;<input name='first_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($first_prize)&&$first_prize!="") echo $first_prize; else echo 1?>" maxlength="2" required>&nbsp;&nbsp;
+  <strong><?php echo $MSG_SILVER ?>&nbsp;:</strong>&nbsp;<input name='second_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($second_prize)&&$second_prize!="") echo $second_prize; else echo 3?>" maxlength="2" required>&nbsp;&nbsp;
+  <strong><?php echo $MSG_BRONZE ?>&nbsp;:</strong>&nbsp;<input name='third_prize' type='number' style='width:50px' min="0" max="99" step="1" value="<?php if(isset($third_prize)&&$third_prize!="") echo $third_prize; else echo 5?>" maxlength="2" required>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label><input type='checkbox' name='enable_overtime' value='1' <?php if($enable_overtime) echo 'checked'?> />&nbsp;<?php echo $MSG_enable_overtime?></label>
   </p>
     <table >

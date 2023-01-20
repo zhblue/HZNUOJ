@@ -887,9 +887,18 @@ void _update_solution_mysql(int solution_id, int result, int time, int memory,
   mysql_real_escape_string(conn, judger, http_username, strlen(http_username));
 
 //**************lixun******************start
-  if(points_enable==1 && result >= OJ_AC){ //积分功能，result >= OJ_AC说明已完成判题
-    MYSQL_RES *res;
-    MYSQL_ROW row;
+  MYSQL_RES *res;
+  MYSQL_ROW row;
+  char enable_points_in_contest;
+  sprintf(sql,"select c.enable_points_in_contest from contest as c, %s as s where c.contest_id=s.contest_id and s.solution_id=%d ", tbname, solution_id);
+  mysql_real_query(conn, sql, strlen(sql));
+  res = mysql_store_result(conn);
+  if (row = mysql_fetch_row(res)){
+    enable_points_in_contest = *row[0];
+  } else {
+    enable_points_in_contest = '1';
+  }
+  if(points_enable==1 && enable_points_in_contest=='1' && result >= OJ_AC){ //积分功能，result >= OJ_AC说明已完成判题
     sprintf(sql,"SELECT lastresult,problem_id,user_id,contest_id,num FROM %s WHERE solution_id=%d ", tbname, solution_id);
     mysql_real_query(conn, sql, strlen(sql));
     res = mysql_store_result(conn);

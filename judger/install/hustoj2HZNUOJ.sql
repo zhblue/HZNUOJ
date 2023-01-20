@@ -227,6 +227,7 @@ ALTER TABLE `contest` ADD COLUMN `room_id` INT(11) NOT NULL DEFAULT '0' AFTER `i
 ALTER TABLE `contest` ADD COLUMN `start_by_login_time` TINYINT(1) NOT NULL DEFAULT '0' AFTER `room_id`;
 ALTER TABLE `contest` ADD COLUMN `duration` DECIMAL(10,1) NOT NULL DEFAULT '0' AFTER `start_by_login_time`;
 ALTER TABLE `contest` ADD COLUMN `enable_overtime` TINYINT(1) NOT NULL DEFAULT '0' AFTER `duration`;
+ALTER TABLE `contest` ADD COLUMN `enable_points_in_contest` TINYINT(1) NOT NULL DEFAULT '1' AFTER `enable_overtime` ;
 ALTER TABLE `contest` ADD INDEX `contest_id` (`contest_id`,`defunct`,`private`,`defunct_TA`,`open_source`) USING BTREE;
 ALTER TABLE `contest` ADD INDEX `running_contest` (`start_time`,`end_time`,`practice`);
 UPDATE `contest` SET `first_prize`=1,`second_prize`=3,`third_prize`=5;

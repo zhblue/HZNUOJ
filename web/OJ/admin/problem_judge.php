@@ -3,6 +3,7 @@ if (!HAS_PRI("rejudge")){
 	echo "0";
 	exit(1);
 }
+require_once("../include/my_func.inc.php");
 function update_points($sid, $judge_result, $type){
 	global $mysqli;
 	global $OJ_points_enable;//是否开启积分功能，true开启，false关闭
@@ -18,6 +19,7 @@ function update_points($sid, $judge_result, $type){
 		$sql="SELECT `lastresult`,`problem_id`,`user_id`,`contest_id`,`num` FROM `solution` WHERE `solution_id`=$sid";
 		$result=$mysqli->query($sql);
 		if($row=$result->fetch_object()){
+			if(!Is_enable_points_in_contest($row->contest_id)) return;
 			$points_pay=0;
 			$lastresult=$row->lastresult;
 			$problem_id=$row->problem_id;

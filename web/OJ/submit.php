@@ -2,12 +2,14 @@
 require_once("include/const.inc.php");
 require_once("include/check_post_key.php");
 require_once("include/db_info.inc.php");
+require_once("include/my_func.inc.php");
 if (!isset($_SESSION['user_id'])){
 	$view_errors= "<a href=./loginpage.php>$MSG_Login</a>";
 	require("template/".$OJ_TEMPLATE."/error.php");
 	exit(0);
 }
-if (isset($OJ_points_enable) && $OJ_points_enable && !isset($_SESSION['contest_id'])){
+$enable_points_in_contest=Is_enable_points_in_contest(intval($_POST['cid']));
+if (isset($OJ_points_enable) && $OJ_points_enable && $enable_points_in_contest && !isset($_SESSION['contest_id'])){
 	$sql="SELECT `points` FROM `users` WHERE `user_id`='{$_SESSION['user_id']}'";
 	$result=$mysqli->query($sql);
 	if ($row=$result->fetch_object()){
@@ -28,7 +30,6 @@ if (isset($OJ_points_enable) && $OJ_points_enable && !isset($_SESSION['contest_i
 		exit(0);
 	}
 } 
-require_once("include/my_func.inc.php");
 $user_id=$_SESSION['user_id'];
 if (isset($_POST['cid'])){
 	$pid=intval($_POST['pid']);
@@ -217,7 +218,7 @@ if(($OJ_LANGMASK)&(1<<$language)){
 	$sql="INSERT INTO `source_code`(`solution_id`,`source`)VALUES('$insert_id','$source')";
 	$mysqli->query($sql);
 
-	if (isset($OJ_points_enable) && $OJ_points_enable && !isset($_SESSION['contest_id'])){
+	if (isset($OJ_points_enable) && $OJ_points_enable && $enable_points_in_contest && !isset($_SESSION['contest_id'])){
 		if (!isset($pid)){
 			$item = '<a href="showsource.php?id='.$insert_id.'" target="_blank">代码提交-'.$id."</a>";
 		} else {

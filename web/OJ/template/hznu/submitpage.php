@@ -21,7 +21,8 @@
   } else {
     $points_pay = 1;
   }
-  if (isset($OJ_points_enable) && $OJ_points_enable && !IS_ADMIN($_SESSION['user_id']) && !isset($_SESSION['contest_id']) ){ //还要不是比赛用户isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])
+  $enable_points_in_contest=Is_enable_points_in_contest($cid);
+  if (isset($OJ_points_enable) && $OJ_points_enable && !IS_ADMIN($_SESSION['user_id']) && $enable_points_in_contest && !isset($_SESSION['contest_id']) ){ //还要不是比赛用户isset($_SESSION['user_id']) && !isset($_SESSION['contest_id'])
     if( $points < 0){
       $view_errors= "<a href='./points_rechange.php'>余额不足，当前剩余 ".round($points,2)." <span class='am-icon-apple'></span>，请点击此处{$MSG_Recharge}{$MSG_points}。</a>";
       require("template/".$OJ_TEMPLATE."/error.php");
@@ -41,7 +42,7 @@
   else {
       $title = "Problem <strong>$id</strong>";
   }
-  if (isset($OJ_points_enable)&&$OJ_points_enable && !isset($_SESSION['contest_id'])){
+  if (isset($OJ_points_enable)&&$OJ_points_enable && $enable_points_in_contest && !isset($_SESSION['contest_id'])){
     $title .= "&nbsp;&nbsp;【当前{$MSG_points}：".round($points,2)." <span class='am-icon-apple'></span>】";
     if(isset($OJ_points_AC)){
       $points_AC = $OJ_points_AC;

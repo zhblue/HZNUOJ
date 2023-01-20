@@ -601,4 +601,13 @@ function getContestEndtime($uid, $contestid){
     }
     return $r;
 }
+
+function Is_enable_points_in_contest($contestid){
+    global $mysqli;
+    $sql="SELECT `enable_points_in_contest` FROM contest WHERE contest_id='".intval($contestid)."' ";
+    if($row=$mysqli->query($sql)->fetch_object()) {
+        if($row->enable_points_in_contest) return true;
+    } else return true;//如果没找到比赛，也定为启用积分
+    return false;
+}
 ?>
