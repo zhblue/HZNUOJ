@@ -543,7 +543,8 @@ CREATE TABLE IF NOT EXISTS `points_log` (
   `pay_points` DECIMAL(10,2) NOT NULL,
   `pay_time` DATETIME NOT NULL,
   PRIMARY KEY (`index`),
-  KEY `solution_id` (`solution_id`) USING BTREE
+  KEY `solution_id` (`solution_id`) USING BTREE,
+  KEY `user_id` (`user_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `log_chart` ( 

@@ -313,6 +313,11 @@ if (!$user_limit){
     $sql="SELECT `user_id` FROM `privilege` WHERE `rightstr`='c$cid' order by user_id";
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
+    if($start_by_login_time){
+        $sql="SELECT `user_id` FROM `contest_loginTime` WHERE `contest_id`='$cid'";
+        $res=$mysqli->query($sql) or die($mysqli->error);
+        $haveNotStart_ulist = array_merge($haveNotStart_ulist, array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id'));
+    }
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
     $haveNotStart_ulist=array_unique($haveNotStart_ulist);
     $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `users` $sql_filter AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";
@@ -320,6 +325,11 @@ if (!$user_limit){
     $sql="SELECT `user_id` FROM `team` WHERE `contest_id`='$cid' order by `user_id`";
     $res=$mysqli->query($sql) or die($mysqli->error);
     $haveNotStart_ulist=array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id');
+    if($start_by_login_time){
+        $sql="SELECT `user_id` FROM `contest_loginTime` WHERE `contest_id`='$cid'";
+        $res=$mysqli->query($sql) or die($mysqli->error);
+        $haveNotStart_ulist = array_merge($haveNotStart_ulist, array_column($res->fetch_all(MYSQLI_ASSOC), 'user_id'));
+    }
     $haveNotStart_ulist=array_diff($haveNotStart_ulist, $ulist1);
     $haveNotStart_ulist=array_unique($haveNotStart_ulist);
     $sql="SELECT `user_id`,`nick`,`real_name`,`class`,`stu_id` FROM `team` $sql_filter AND `contest_id`='$cid' AND `user_id` IN ('".implode("','",$haveNotStart_ulist)."') ORDER BY `user_id`";

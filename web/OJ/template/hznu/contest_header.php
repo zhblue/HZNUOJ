@@ -67,7 +67,7 @@ if(isset($_GET['cid'])){
   if($contest_time['start_by_login_time'] && $user_id2!="" && !HAS_PRI("edit_contest")){//记录contest登入时间
     $sql = "SELECT `user_id` FROM `solution` WHERE contest_id='$cid' AND `user_id`='$user_id2' LIMIT 1";
     if($mysqli->query($sql)->num_rows==0 && is_null($contest_time['startTime'])){//还没提交代码而且还没有登入记录，就记录contest登入时间
-      if(is_running($cid)){
+      if($contest_ok && is_running($cid)){
         $loginTime = date('Y-m-d H:i:s',$now);
         $sql = "INSERT INTO `contest_loginTime`(`contest_id`,`user_id`,`startTime`) VALUES('$cid','$user_id2','$loginTime') ON DUPLICATE KEY UPDATE `startTime`='$loginTime'";
         $mysqli->query($sql);
@@ -268,7 +268,7 @@ BOT;
         ?>
         <!-- 用户部分 end -->
         <?php 
-        if($contest_time['duration'] > 0){
+        if($contest_time['start_by_login_time'] && $contest_time['duration'] > 0){
           $tmp = floatval($contest_time['duration'])*60+$contest_time['overTime']*$contest_time['enable_overtime'];
           if(floor($tmp / 60) > 0) $h .= floor($tmp / 60)." 小时 ";
           if($tmp % 60 > 0) $h .= $tmp % 60 ." 分钟";

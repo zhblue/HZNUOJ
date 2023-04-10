@@ -90,7 +90,7 @@
 		  $sql = "UPDATE reply SET author_id='$dest' WHERE author_id='$origin'";
 		  $mysqli->query($sql);
 		  $sql = "UPDATE solution SET user_id='$dest' WHERE user_id='$origin'";
-		  $sql .= " AND solution_id not in (SELECT solution.solution_id FROM solution, team WHERE solution.user_id='$origin' AND solution.contest_id = team.contest_id AND solution.user_id = team.user_id ";
+		  $sql .= " AND solution_id not in (SELECT a.solution_id from (SELECT solution.solution_id FROM solution, team WHERE solution.user_id='$origin' AND solution.contest_id = team.contest_id AND solution.user_id = team.user_id ) a)";
 		  $mysqli->query($sql);
 		  $sql = "UPDATE topic SET author_id='$dest' WHERE author_id='$origin'";
 		  $mysqli->query($sql);

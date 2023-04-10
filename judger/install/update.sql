@@ -166,3 +166,6 @@ ALTER TABLE `contest` ADD `duration` DECIMAL(10,1) NOT NULL DEFAULT '0' AFTER `s
 
 --20230110
 ALTER TABLE `contest` ADD `enable_points_in_contest` TINYINT(1) NOT NULL DEFAULT '1' AFTER `enable_overtime` ;
+
+--20230321
+ALTER TABLE `points_log` ADD INDEX `user_id` (`user_id`);

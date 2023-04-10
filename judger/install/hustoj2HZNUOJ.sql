@@ -489,7 +489,8 @@ CREATE TABLE `points_log` (
   `pay_points` DECIMAL(10,2) NOT NULL,
   `pay_time` DATETIME NOT NULL,
   PRIMARY KEY (`index`),
-  KEY `solution_id` (`solution_id`) USING BTREE
+  KEY `solution_id` (`solution_id`) USING BTREE,
+  KEY `user_id` (`user_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 ALTER TABLE `class_list` ADD `give_points` DECIMAL(10,2) NOT NULL DEFAULT '0.00' AFTER `enrollment_year`;
 ALTER TABLE `users` ADD `activateCode` VARCHAR(48) NOT NULL DEFAULT '' AFTER `points`;
