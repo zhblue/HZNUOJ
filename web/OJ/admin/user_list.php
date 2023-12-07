@@ -190,7 +190,7 @@ if (!isset($_GET['team'])) { //查询普通账号
         if (HAS_PRI("edit_user_profile")) $view_users[$cnt][0] = "<input type=checkbox name='cid[]' value='$row->user_id' />&nbsp;" . ++$u_id;
         else $view_users[$cnt][0] = ++$u_id;
         $view_users[$cnt][1] = "<a href='../userinfo.php?user=" . $row->user_id . "' target='_blank'>" . $row->user_id . "</a>";
-        $view_users[$cnt][2] = mb_strlen($row->nick, 'utf-8')<=4 ? "<div style='width:80px;white-space: nowrap;'>$row->nick</div>" : "<div title='$row->nick' style='width:80px;white-space: nowrap;text-overflow:ellipsis; overflow:hidden;'>". mb_substr($row->nick,0,4,'utf-8')."...</div>";
+        $view_users[$cnt][2] = mb_strlen($row->nick, 'utf-8')<=7 ? "<div style='width:80px;white-space: nowrap;'>$row->nick</div>" : "<div title='$row->nick' style='width:80px;white-space: nowrap;text-overflow:ellipsis; overflow:hidden;'>". mb_substr($row->nick,0,7,'utf-8')."...</div>";
         if (HAS_PRI("edit_user_profile")) {
             if ($row->user_id != 'admin' && get_order(get_group($row->user_id)) > get_order(get_group(""))) {
                 if ($row->defunct == "N") {
