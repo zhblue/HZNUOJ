@@ -105,12 +105,12 @@ HTML;
   ?>
   <h1 style="text-align:center;margin-top:40px;">
       <?php
+      if(strtolower($problemrow->defunct)=="y"){
+        echo "<i class='am-icon-eye-slash'></i>&nbsp;";
+      }
       echo $problemrow->title;
-      ?>
-    <!-- is contest problem -->
-      <?php
       if($has_accepted) {
-          echo "<span class='am-badge am-badge-success am-text-lg'><i class='am-icon-check'></i>$MSG_AC</span>";
+          echo "&nbsp;<span class='am-badge am-badge-success am-text-lg'><i class='am-icon-check'></i>$MSG_AC</span>";
       }
       $now=time();
       ?>

@@ -89,6 +89,7 @@ if (isset($_GET['cid'])){
         $view_end_time=$row->end_time;
         $practice = $row->practice;
         $can_enter_contest = true;
+        $view_defunct = $row->defunct;
         if (!HAS_PRI("edit_contest") && $now<$start_time){
             $can_enter_contest = false;
         }
