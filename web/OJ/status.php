@@ -53,7 +53,7 @@
   //check the cid arg start
   if (isset($_GET['cid'])){	 
     $cid=intval($_GET['cid']);
-    $sql=$sql." AND `contest_id`='$cid' and num>=0 ";
+    $sql=$sql." AND `contest`.`contest_id`='$cid' and num>=0 ";
     $sql_lock="SELECT * FROM `contest` WHERE `contest_id`='$cid'";
     $result=$mysqli->query($sql_lock) or die($mysqli->error);
     $rows_cnt=$result->num_rows;
@@ -91,8 +91,13 @@
       exit(0);
     }
     if(isset($OJ_show_contestSolutionInStatus)&&$OJ_show_contestSolutionInStatus){
-      $sql=" WHERE 1 "; //要在主状态页面中显示contest中提交的代码
-    } else $sql=" WHERE (contest_id is null OR contest_id=0) ";//不在主状态页面中显示contest中提交的代码
+      //要在主状态页面中显示contest中提交的代码
+      if(HAS_PRI("see_source_in_contest")){
+        $sql=" WHERE 1 "; //有对应权限的管理员可以查看已停用contest的提交代码
+      } else {
+        $sql=" WHERE (`contest`.`defunct`='N' OR `contest`.`defunct` is null) "; //普通用户不能显示已停用的contest的提交代码，防止通过此途径猜测比赛题目
+      }
+    } else $sql=" WHERE (`contest`.`contest_id` is null OR `contest`.`contest_id`=0) ";//不在主状态页面中显示contest中提交的代码
   }
   
   if (isset($_GET['sort_method']) && trim($_GET['sort_method'])!="" ) $args['sort_method'] = trim($_GET['sort_method']);
@@ -174,7 +179,30 @@
   if ($jresult_get!=-1&&!$lock){
     $sql=$sql."AND `result`='".strval($jresult_get)."' ";
   }
-  $sql_page = "SELECT count(1) FROM `solution` ".$sql;
+  $sql_page = "SELECT count(1) FROM `solution` LEFT JOIN `contest` ON `solution`.`contest_id`=`contest`.`contest_id` ";
+  if($OJ_SIM){
+    //$old=$sql;
+    if(isset($_GET['showsim'])&&intval($_GET['showsim'])>0){
+      $showsim=intval($_GET['showsim']);
+      $sql.=" AND `sim`.`sim`>=$showsim";
+      $sql_page .=" LEFT JOIN `sim` sim ON `solution`.`solution_id`=sim.s_id ".$sql;
+    } else {
+      $sql_page .= $sql;
+    }
+    
+    $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname`, sim.* FROM `solution` 
+          LEFT JOIN `contest` ON `solution`.`contest_id`=`contest`.`contest_id`
+          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
+          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` 
+          LEFT JOIN `sim` sim ON `solution`.`solution_id`=sim.s_id ".$sql;
+  }else{
+    $sql_page .= $sql;
+	  $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname` FROM `solution` 
+          LEFT JOIN `contest` ON `solution`.`contest_id`=`contest`.`contest_id`
+          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
+          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` ".$sql;
+  }
+  // echo $sql;
   $rows =$mysqli->query($sql_page)->fetch_all(MYSQLI_BOTH) or die($mysqli->error);
   if($rows) $total = $rows[0][0];  
   $view_total_page = ceil($total / $page_cnt); //计算页数
@@ -184,22 +212,6 @@
   $pstart = $page_cnt*$page-$page_cnt;
   $pend = $page_cnt;
   $sql_limit = " limit ".strval($pstart).",".strval($pend);
-
-  if($OJ_SIM){
-    //$old=$sql;
-    $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname`, sim.* FROM `solution` 
-          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
-          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` 
-          LEFT JOIN `sim` sim ON `solution`.`solution_id`=sim.s_id ".$sql;
-    if(isset($_GET['showsim'])&&intval($_GET['showsim'])>0){
-          $showsim=intval($_GET['showsim']);
-          $sql.=" AND `sim`.`sim`>=$showsim";
-    }
-  }else{
-	  $sql="SELECT `solution`.*, `users`.`nick`, `ip_list`.`pcname` FROM `solution` 
-          LEFT JOIN `users` ON `solution`.`user_id`=`users`.`user_id` 
-          LEFT JOIN `ip_list` ON `solution`.`ip`=`ip_list`.`ip` ".$sql;
-  }
 
   //if is rankist query, show all submissions
   if(isset($_GET['ranklist_ajax_query'])){
@@ -249,8 +261,12 @@
       if(isset($cid)){
         $view_status[$i][2].= "<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".PID($row['num'])."</a>";
       }else{
-		    $view_status[$i][2].= "<a target='_blank' href='problem.php?id=".$row['problem_id']."'>".$row['problem_id']."</a>";
-        $view_status[$i][2].= "&nbsp;(<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".$row['contest_id']."-".PID($row['num'])."</a>)";
+        if(isset($_SESSION['user_id']) && IS_ADMIN($_SESSION['user_id'])){
+          $view_status[$i][2].= "<a target='_blank' href='problem.php?id=".$row['problem_id']."'>".$row['problem_id']."</a>";
+          $view_status[$i][2].= "&nbsp;(<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".$row['contest_id']."-".PID($row['num'])."</a>)";
+        } else {
+          $view_status[$i][2].= "<a target='_blank' href='problem.php?cid=".$row['contest_id']."&pid=".$row['num']."'>".$row['contest_id']."-".PID($row['num'])."</a>";
+        }
 	  }
       $view_status[$i][2].="</div>";
     } else{
