@@ -160,6 +160,7 @@ static int java_memory_bonus = 512;
 static char java_xms[BUFFER_SIZE/10];
 static char java_xmx[BUFFER_SIZE/10];
 static int sim_enable = 0;
+static int sim_switch = 1;
 static int oi_mode = 0;
 static int full_diff = 0;
 static int use_max_time = 0;
@@ -198,6 +199,7 @@ static double points_firstAC=1.0; //提交的代码第一次AC题目奖励xx个�
 static double points_Wrong=0.0;   //提交的代码错误扣除xx积分，
 
 static int py2=1; // caution: py2=1 means default using py3
+static char py_bin[BUFFER_SIZE / 10] = "/usr/bin/python3";
 
 #define ZOJ_COM
 
@@ -543,6 +545,7 @@ void init_judge_conf()   //读取判题主目录etc中的配置文件judge.conf
       read_int(buf, "OJ_JAVA_TIME_BONUS", &java_time_bonus);
       read_int(buf, "OJ_JAVA_MEMORY_BONUS", &java_memory_bonus);
       read_int(buf, "OJ_SIM_ENABLE", &sim_enable);
+      read_int(buf, "OJ_SIM_SWITCH", &sim_switch);
       read_buf(buf, "OJ_JAVA_XMS", java_xms);
       read_buf(buf, "OJ_JAVA_XMX", java_xmx);
       read_int(buf, "OJ_HTTP_JUDGE", &http_judge);
@@ -3281,8 +3284,14 @@ int get_sim(int solution_id, int lang, int pid, int &sim_s_id)
   char src_pth[BUFFER_SIZE];
   //char cmd[BUFFER_SIZE];
   sprintf(src_pth, "Main.%s", lang_ext[lang]);
-
-  int sim = execute_cmd("/usr/bin/sim.sh %s %d", src_pth, pid);
+  int sim;
+  if(sim_switch == 1){
+    sim = execute_cmd("/usr/bin/sim.sh %s %d", src_pth, pid);
+  } else {
+    char com_pth[BUFFER_SIZE];
+    sprintf(com_pth, "../data/%d/ac/", pid);
+    sim = execute_cmd("%s /usr/bin/sim.py %s %s", py_bin, src_pth, com_pth);
+  }
   if (!sim)
   {
     execute_cmd("/bin/mkdir ../data/%d/ac/ 2>/dev/null", pid);
@@ -3312,6 +3321,8 @@ int get_sim(int solution_id, int lang, int pid, int &sim_s_id)
   }
   if (solution_id <= sim_s_id)
     sim = 0;
+  // if (DEBUG)
+  //   printf("Sim detection %d %d\n", sim, sim_s_id);
   return sim;
 }
 void mk_shm_workdir(char *work_dir)

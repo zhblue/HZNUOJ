@@ -124,6 +124,7 @@ function generate_url($data){
                 <option value=80 ".($showsim==80?'selected':'').">&gt;=80%</option>
                 <option value=90 ".($showsim==90?'selected':'').">&gt;=90%</option>
                 <option value=100 ".($showsim==100?'selected':'').">100%</option>
+                <option value=200 ".($showsim==200?'selected':'').">200%</option>
                 ";
                 ?>
             </select>

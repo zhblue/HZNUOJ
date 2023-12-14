@@ -19,6 +19,9 @@ cp sim_text.exe /usr/bin/sim_text
 cp sim_lisp.exe /usr/bin/sim_scm
 cd ..
 cp sim.sh /usr/bin
+cp sim.py /usr/bin
 chmod +x /usr/bin/sim.sh
+chmod +x /usr/bin/sim.py
+pip3 install copydetect
 #ln -fs /usr/bin/sim_c /usr/bin/sim_cc 2>&1 > /dev/null
 echo "done!"

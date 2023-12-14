@@ -40,6 +40,8 @@ OJ_JAVA_XMX=-Xmx128M
 
 OJ_SIM_ENABLE=1            #是否使用sim进行代码相似度的检测,即抄袭检查功能，长期开启此功能会占用大量硬盘存储空间
 
+OJ_SIM_SWITCH=1            #相似度检测工具选择，1-SIM，2-Python copydetect
+
 OJ_HTTP_JUDGE=0            #是否使用HTTP方式连接数据库，如果启用，则前面的HOST_NAME等设置忽略,。
 
 OJ_HTTP_BASEURL=http://127.0.0.1/JudgeOnline  #使用HTTP方式连接数据库的基础地址，就是OJ的首页地址。
