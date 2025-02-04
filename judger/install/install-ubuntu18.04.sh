@@ -59,6 +59,13 @@ do
         echo "Network fail, retry... you might want to change another apt source for install"
     done
 done
+for pkg in "libtiff5-dev libjpeg8-dev libopenjp2-7-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk libharfbuzz-dev libfribidi-dev libxcb1-dev python3-pip"
+do
+    while ! apt-get install -y $pkg
+    do
+        echo "Network fail, retry... you might want to change another apt source for install"
+    done
+done
 reset
 echo ""
 echo " ██      ██ ████████ ████     ██ ██     ██   ███████        ██"

@@ -186,7 +186,7 @@
           echo "</td>\n";
           echo "<td class='rankcell'><div class='nick'";
           if(HAS_PRI("edit_contest") && $start_by_login_time && $user_start_time[$uuid]!=""){
-            echo " style='cursor: pointer;' title='登入时间：".date('m-d H:i',$user_start_time[$uuid]);
+            echo " style='cursor: pointer;font-weight: bold;' title='登入时间：".date('m-d H:i',$user_start_time[$uuid]);
             if($contest_time['duration']!= 0) echo "\n结束时间：".date('m-d H:i',$user_start_time[$uuid]+intval(floatval($contest_time['duration'])*3600)+intval($user_over_time[$uuid])*60);
             echo "'";
           } 
