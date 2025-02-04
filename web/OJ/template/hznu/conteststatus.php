@@ -17,7 +17,7 @@ if(isset($_GET['problem_id'])) $args['problem_id']=htmlentities($problem_id);
 if(isset($_GET['user_id'])) $args['user_id']=htmlentities($user_id);
 if(isset($_GET['language'])&& $language!=-1) $args['language']=htmlentities($language);
 if(isset($_GET['jresult']) && $jresult_get!=-1) $args['jresult']=htmlentities($jresult_get);
-if(isset($_GET['showsim'])) $args['showsim']=htmlentities($showsim);
+if(isset($_GET['showsim']) && !is_null($showsim)) $args['showsim']=htmlentities($showsim);
 if(isset($page)) $args['page']=$page;
 function generate_url($data){
     global $args;

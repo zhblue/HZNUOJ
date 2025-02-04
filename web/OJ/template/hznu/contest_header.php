@@ -290,7 +290,7 @@ BOT;
       <span><?php echo date("Y-m-d, H:i:s",$contest_starttime) ?></span>
     </div>
     <div class="am-u-sm-6 am-text-center">
-      <span class="text-bold" style="font-size: large;"><?php if(strtolower($view_defunct)=="y") echo "<i class='am-icon-eye-slash'></i>&nbsp;"; echo $contest_title; if($h!="") echo "【答题时间：".$h."】"; ?></span>
+      <span class="text-bold" style="font-size: large;"><?php if(!is_null($defunct) && strtolower($view_defunct)=="y") echo "<i class='am-icon-eye-slash'></i>&nbsp;"; echo $contest_title; if($h!="") echo "【答题时间：".$h."】"; ?></span>
     </div>
     <div class="am-u-sm-3 am-text-right">
       <span class="text-bold"><?php echo $MSG_EndTime ?>: </span>

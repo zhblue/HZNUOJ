@@ -224,7 +224,7 @@ function canSeeSource($sid) {
     
     $pri_in = HAS_PRI("see_source_in_contest");
     $pri_out =  HAS_PRI("see_source_out_of_contest");
-    if(strtolower($defunct)=="y" && !$pri_in) {
+    if(!is_null($defunct) && strtolower($defunct)=="y" && !$pri_in) {
         return false; //若后台把比赛停用，比赛中提交的代码非管理员不可查看，包括status页面和getsource页面
     }
     $irc = false; // in running contest

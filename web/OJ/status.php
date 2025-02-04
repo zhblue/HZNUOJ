@@ -373,7 +373,7 @@
       $view_status[$i][7]="----";
     }
     $view_status[$i][8]= $row['in_date'];
-    if (mb_strlen($row['pcname'], 'utf-8')>0){
+    if (!is_null($row['pcname']) && mb_strlen($row['pcname'], 'utf-8')>0){
       $pcname = "【".$row['pcname']."】";
     } else $pcname = "";
     $view_status[$i][9] = ($pcname!="") ? $pcname : substr_replace($row['ip'],"**",0,strpos($row['ip'],"."));

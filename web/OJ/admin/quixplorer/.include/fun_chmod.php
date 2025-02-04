@@ -80,8 +80,8 @@ function chmod_item($dir, $item)
 	for($i=0;$i<3;++$i) {
 		echo "<TR><TD>" . $GLOBALS["messages"]["miscchmod"][$i] . "</TD>";
 		for($j=0;$j<3;++$j) {
-			echo "<TD>" . $pos{$j} . "&nbsp;<INPUT type=\"checkbox\"";
-			if($mode{(3*$i)+$j} != "-") echo " checked";
+			echo "<TD>" . $pos[$j] . "&nbsp;<INPUT type=\"checkbox\"";
+			if($mode[(3*$i)+$j] != "-") echo " checked";
 			echo " name=\"r_" . $i.$j . "\" value=\"1\"></TD>";
 		}
 		echo "</TR>\n";

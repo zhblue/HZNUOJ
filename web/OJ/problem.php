@@ -12,7 +12,7 @@ $OJ_CACHE_SHARE=false;
 require_once('./include/cache_start.php');
 require_once('./include/db_info.inc.php');
 require_once('./include/setlang.php');
-$now=strftime("%Y-%m-%d %H:%M",time());
+$now=date("Y-m-d H:i",time());
 if (isset($_GET['cid'])) $ucid="&cid=".intval($_GET['cid']);
 else $ucid="";
 require_once("./include/db_info.inc.php");
@@ -66,7 +66,7 @@ if (isset($_GET['id']) && !(isset($_GET['cid']) && isset($_GET['pid'])) ) { // å
         $has_accepted = intval($mysqli->query($sql)->fetch_array()[0]) > 0;
     }
     
-    $now=strftime("%Y-%m-%d %H:%M",time());
+    $now=date("Y-m-d H:i",time());
     if (HAS_PRI("see_hidden_".$set_name."_problem")){
         $sql="SELECT * FROM `problem` WHERE `problem_id`=$id";
     }
