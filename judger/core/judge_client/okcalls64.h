@@ -17,7 +17,7 @@
  * along with HUSTOJ. if not, see <http://www.gnu.org/licenses/>.
  */
 //c & c++
-int LANG_CV[CALL_ARRAY_SIZE] = {0,1,2,3,5,8,9,10,11,12,13,14,16,20,21,39,56,59,63,89,99,158,186,218,231,234,257,262,268,275,292,302,318,334,511,        
+int LANG_CV[CALL_ARRAY_SIZE] = {0,1,2,3,5,8,9,10,11,12,13,14,16,20,21,39,56,59,63,89,99,158,186,218,231,234,257,262,267,268,275,292,302,318,334,511,        
 	SYS_write, SYS_mprotect, SYS_munmap, SYS_brk, SYS_arch_prctl, SYS_pread64, SYS_open, SYS_writev,
         SYS_time, SYS_futex, SYS_set_thread_area, SYS_access, SYS_clock_gettime, SYS_exit_group, SYS_mq_open,
         SYS_ioprio_get, SYS_unshare, SYS_set_robust_list, SYS_splice, SYS_close, SYS_stat, SYS_fstat, SYS_execve,
@@ -29,7 +29,7 @@ int LANG_PV[CALL_ARRAY_SIZE] = {
         SYS_stat, SYS_execve, SYS_uname, SYS_readlink, SYS_mmap, SYS_getrlimit, 0 };
 //java
 int LANG_JV[CALL_ARRAY_SIZE] = {
-        0, SYS_mprotect, SYS_getuid, SYS_getgid, SYS_geteuid, SYS_getegid, SYS_munmap, SYS_getppid, SYS_getpgrp,
+        0, 262,267,318,334,435, SYS_mprotect, SYS_getuid, SYS_getgid, SYS_geteuid, SYS_getegid, SYS_munmap, SYS_getppid, SYS_getpgrp,
         SYS_brk, SYS_rt_sigaction, SYS_rt_sigprocmask, SYS_prctl, SYS_arch_prctl, SYS_ioctl, SYS_pread64, SYS_open,
         SYS_futex, SYS_set_thread_area, SYS_access, SYS_getdents64, SYS_set_tid_address, SYS_pipe, SYS_exit_group,
         SYS_openat, SYS_set_robust_list, SYS_close, SYS_prlimit64, SYS_dup2, SYS_getpid, SYS_stat, SYS_fstat, SYS_clone,
@@ -44,7 +44,7 @@ int LANG_RV[CALL_ARRAY_SIZE] = {
         SYS_getrusage, 0 };
 //bash
 int LANG_BV[CALL_ARRAY_SIZE] = {
-        0, SYS_write, SYS_mprotect, SYS_getuid, SYS_getgid, SYS_geteuid, SYS_getegid, SYS_munmap, SYS_getppid,
+        0, 202,218,262,273,318,334,SYS_write, SYS_mprotect, SYS_getuid, SYS_getgid, SYS_geteuid, SYS_getegid, SYS_munmap, SYS_getppid,
         SYS_getpgrp, SYS_brk, SYS_rt_sigaction, SYS_rt_sigprocmask, SYS_arch_prctl, SYS_ioctl, SYS_pread64,
         SYS_afs_syscall, SYS_getxattr, SYS_open, SYS_access, SYS_pipe, SYS_clock_nanosleep, SYS_exit_group, SYS_openat,
         SYS_close, SYS_prlimit64, SYS_dup2, SYS_getpid, SYS_stat, SYS_socket, SYS_connect, SYS_fstat, SYS_clone,
@@ -53,6 +53,7 @@ int LANG_BV[CALL_ARRAY_SIZE] = {
 //python
 int LANG_YV[CALL_ARRAY_SIZE] = {
         0,1,2,3,4,5,6,8,9,10,11,12,13,14,16,17,21,32,39,41,42,49,59,72,78,79,89,97,99,102,104,106,107,108,131,137,158,186,202,217,218,228,231,257,262,273,302,318,334,
+	511,
         SYS_write, SYS_mprotect, SYS_getuid, SYS_getgid, SYS_geteuid, SYS_getegid, SYS_munmap, SYS_brk,
         SYS_rt_sigaction, SYS_sigaltstack, SYS_rt_sigprocmask, SYS_sched_get_priority_max, SYS_arch_prctl, SYS_ioctl,
         SYS_pread64, SYS_getxattr, SYS_open, SYS_futex, SYS_access, SYS_getdents64, SYS_set_tid_address, SYS_clock_gettime,
@@ -62,7 +63,7 @@ int LANG_YV[CALL_ARRAY_SIZE] = {
         SYS_sysinfo, 0 };
 //php
 int LANG_PHV[CALL_ARRAY_SIZE] = {
-        0,1,3,4,5,6,8,9,10,11,12,13,14,16,17,21,59,79,99,158,202,218,231,257,273,302,318,
+        0,1,3,4,5,6,8,9,10,11,12,13,14,16,17,21,59,79,99,158,202,218,231,257,262,273,302,318,334,
 	SYS_write, SYS_mprotect, SYS_munmap, SYS_brk, SYS_rt_sigaction, SYS_rt_sigprocmask,
         SYS_sched_get_priority_max, SYS_arch_prctl, SYS_ioctl, SYS_pread64, SYS_getxattr, SYS_open, SYS_writev,
         SYS_time, SYS_futex, SYS_set_thread_area, SYS_access, SYS_getdents64, SYS_set_tid_address, SYS_exit_group,
@@ -125,11 +126,11 @@ int LANG_JSV[CALL_ARRAY_SIZE] = {
         SYS_gettimeofday, SYS_getrlimit, 0 };
 //go-lang
 int LANG_GOV[CALL_ARRAY_SIZE] = {
-        0, SYS_write, SYS_mprotect, SYS_munmap, SYS_rt_sigaction, SYS_sigaltstack, SYS_rt_sigprocmask,
+        0, 3, 35,511, SYS_write, SYS_mprotect, SYS_munmap, SYS_rt_sigaction, SYS_sigaltstack, SYS_rt_sigprocmask,
         SYS_arch_prctl, SYS_pread64, SYS_gettid, SYS_futex, SYS_sched_getaffinity, SYS_clock_gettime, SYS_exit_group,
         SYS_sched_yield, SYS_openat, SYS_readlinkat, SYS_clone, SYS_execve, SYS_fcntl, SYS_mmap, 0 };
 //sqlite3
-int LANG_SQLV[CALL_ARRAY_SIZE] = {0,8,11,18,75,87,1,3,4,5,6,9,10,12,13,14,16,17,21,39,41,42,59,72,79,102,107,158,218,231,257,273,302,
+int LANG_SQLV[CALL_ARRAY_SIZE] = {0,8,11,18,75,87,1,3,4,5,6,9,10,12,13,14,16,17,21,39,41,42,59,72,79,102,107,158,218,231,257,262,273,302,318,334,
         SYS_write, SYS_mprotect, SYS_getuid, SYS_geteuid, SYS_brk, SYS_rt_sigaction, SYS_rt_sigprocmask,
         SYS_arch_prctl, SYS_ioctl, SYS_pread64, SYS_open, SYS_futex, SYS_access, SYS_set_tid_address, SYS_exit_group,
         SYS_set_robust_list, SYS_close, SYS_stat, SYS_socket, SYS_connect, SYS_fstat, SYS_execve, SYS_semget, SYS_fcntl,
@@ -149,3 +150,11 @@ int LANG_MV[CALL_ARRAY_SIZE] = {
         SYS_gettimeofday, 0 };
 //Cobal
 int LANG_CBV[CALL_ARRAY_SIZE]={0,1,3,4,5,8,9,10,11,12,13,14,17,21,41,42,59,89,158,202,218,231,257,273,302,0};
+
+//R Lang
+int LANG_RLV[CALL_ARRAY_SIZE]={0,1,3,8,9,10,11,12,13,14,16,17,21,33,39,41,42,56,59,61,63,72,79,83,89,98,99,102,104,107,
+                               108,110,111,131,158,202,204,217,218,231,257,262,273,293,302,318,334,435,439,0};
+//Scratch3
+int LANG_SB3V[CALL_ARRAY_SIZE]={0,1,3,5,9,10,11,12,13,14,16,17,21,28,39,56,59,63,72,89,99,102,104,107,108,158,202,218,231,232,233,257,262,273,290,291,293,302,318,332,334,435,0};
+//Cangjie
+int LANG_CJV[CALL_ARRAY_SIZE] = {0,1,3,4,9,10,11,12,13,14,17,21,28,56,59,89,99,157,158,186,202,218,228,231,257,262,273,302,318,334,435,0};

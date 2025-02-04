@@ -22,6 +22,6 @@ cp sim.sh /usr/bin
 cp sim.py /usr/bin
 chmod +x /usr/bin/sim.sh
 chmod +x /usr/bin/sim.py
-pip3 install copydetect
+pip3 install --break-system-packages copydetect
 #ln -fs /usr/bin/sim_c /usr/bin/sim_cc 2>&1 > /dev/null
 echo "done!"
