@@ -51,11 +51,9 @@ if(isset($_POST['to_user'])){
     $title = $_POST ['title'];
     $content = $_POST ['content'];
     $from_user=$_SESSION['user_id'];
-    if (get_magic_quotes_gpc ()) {
-        $to_user = stripslashes ( $to_user);
-        $title = stripslashes ( $title);
-        $content = stripslashes ( $content );
-    }
+    $to_user = stripslashes ( $to_user);
+    $title = stripslashes ( $title);
+    $content = stripslashes ( $content );
     $title = RemoveXSS( $title);
     $to_user=$mysqli->real_escape_string($to_user);
     $title=$mysqli->real_escape_string($title);

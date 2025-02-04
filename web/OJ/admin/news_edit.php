@@ -22,10 +22,8 @@
     $importance = $_POST ['importance'];
     $user_id=$_SESSION['user_id'];
     $news_id=intval($_POST['news_id']);
-    if (get_magic_quotes_gpc ()) {
-      $title = stripslashes ( $title);
-      $content = stripslashes ( $content );
-    }
+    $title = stripslashes ( $title);
+    $content = stripslashes ( $content );
     $title=$mysqli->real_escape_string($title);
     $content=$mysqli->real_escape_string(str_replace("<br />\r\n<!---->","",$content));//火狐浏览器中kindeditor会在空白内容的末尾加入<br />\r\n<!---->
     $content = str_replace("<!---->","",$content);//火狐浏览器中kindeditor会在内容的末尾加入<!---->

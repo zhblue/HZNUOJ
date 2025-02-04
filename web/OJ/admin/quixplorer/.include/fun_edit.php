@@ -41,9 +41,9 @@ require_once("./.include/permissions.php");
 //------------------------------------------------------------------------------
 function savefile($file_name) {			// save edited file
 	$code = ($GLOBALS['__POST']["code"]);
-  if(get_magic_quotes_gpc()){
+//   if(get_magic_quotes_gpc()){
      $code =stripslashes($code );
-  }
+//   }
   $code =preg_replace ( "(\r\n)", "\n", $code );
   
 	$fp = @fopen($file_name, "w");

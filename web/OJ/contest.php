@@ -41,9 +41,7 @@ if (isset($_GET['cid'])){
     $contest_ok=true;
     $password="";
     if(isset($_POST['pwd'])) $password=$mysqli->real_escape_string($_POST['pwd']);
-    if (get_magic_quotes_gpc ()) {
-        $password = stripslashes ($password);
-    }
+    $password = stripslashes ($password);
     if ($rows_cnt==0){
         $result->free();
         $view_title= $MSG_ContestIsClosed;

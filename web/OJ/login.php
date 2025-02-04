@@ -27,10 +27,8 @@
   $cid = $_POST['contest_id'];
 //  echo $password;
 //  echo $user_id."<br>";
-  if (get_magic_quotes_gpc ()) {
-    $user_id= stripslashes($user_id);
-    $password= stripslashes($password);
-  }
+  $user_id= stripslashes($user_id);
+  $password= stripslashes($password);
   if (isset($OJ_login2mycontest) && $OJ_login2mycontest && !IS_ADMIN($user_id)){
     $go = "window.location.href='contest.php?my';";
   } else if (isset($_SESSION['gotoIndex'])){

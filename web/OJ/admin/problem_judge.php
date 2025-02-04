@@ -179,9 +179,7 @@ if(isset($_POST['manual'])){
              $sql="DELETE FROM runtimeinfo WHERE solution_id=$sid ";
              $mysqli->query($sql);
              $reinfo=$mysqli->real_escape_string($_POST['explain']);
-             if (get_magic_quotes_gpc ()) {
-                 $reinfo= stripslashes ( $reinfo);
-             }
+             $reinfo= stripslashes ( $reinfo);
              $sql="INSERT INTO runtimeinfo VALUES($sid,'$reinfo')";
              $mysqli->query($sql);
         }

@@ -17,9 +17,7 @@ if (!HAS_PRI("edit_news")) {
 if (isset($_POST['content'])) {
     require_once("../include/check_post_key.php");
     $content = $_POST ['content'];
-    if (get_magic_quotes_gpc ()) {
-        $content = stripslashes ( $content );
-    }
+    $content = stripslashes ( $content );
     $content=$mysqli->real_escape_string($content);
     
     $sql="UPDATE `faqs` set `content`='$content'";

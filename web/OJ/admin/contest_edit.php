@@ -49,13 +49,10 @@ if (isset($_POST['startdate'])) { // 如果有POST过来的信息，则获取POS
     $duration = floatval(($_POST['duration']));
     $enable_overtime = intval(($_POST['enable_overtime']));
     $enable_points_in_contest = intval(($_POST['enable_points_in_contest']));
-    if (get_magic_quotes_gpc ()) {
-        $title = stripslashes ( $title);
-        $private = stripslashes ($private);
-        $password = stripslashes ( $password);
-        $description = stripslashes ( $description);
-    }
-    
+    $title = stripslashes ( $title);
+    $private = stripslashes ($private);
+    $password = stripslashes ( $password);
+    $description = stripslashes ( $description);
     $lang=$_POST['lang'];
     $langmask=0;
     foreach($lang as $t){

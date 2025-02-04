@@ -24,10 +24,8 @@
               exit(0);
   }
 
-  if(get_magic_quotes_gpc()){
-        $lost_user_id=stripslashes($lost_user_id);
-        $lost_key=stripslashes($lost_key);
-  }
+  $lost_user_id=stripslashes($lost_user_id);
+  $lost_key=stripslashes($lost_key);
   if($_SESSION['lost_user_id']==$lost_user_id && $_SESSION['lost_key']==$lost_key) {
     $sql="UPDATE `users` SET `password`='".pwGen($lost_key)."' WHERE `user_id`='".$lost_user_id."'";
     $result=$mysqli->query($sql);

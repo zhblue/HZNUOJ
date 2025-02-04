@@ -36,10 +36,8 @@ if(isset($_POST['do'])){
 		require_once("error.php");
 		exit(1);
     }
-    if (get_magic_quotes_gpc ()) {
-		$user_id = stripslashes ( $user_id);
-		$passwd = stripslashes ( $passwd);
-	}
+	$user_id = stripslashes ( $user_id);
+	$passwd = stripslashes ( $passwd);
 	$user_id=$mysqli->real_escape_string($user_id);
 	$passwd=pwGen($passwd);
 	if(IS_ADMIN($user_id)){
