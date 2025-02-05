@@ -214,3 +214,27 @@ HZNUOJ目前开发人手很有限，只有已经上班的我和训练繁忙的�
 同时也欢迎大家反馈[issue](https://github.com/wlx65003/HZNUOJ/issues)/提交[pull request](https://github.com/wlx65003/HZNUOJ/pulls)帮忙一起完善HZNUOJ。
 
 最后，如果您觉得HZNUOJ好用，请给我一个Star，这将是对我莫大的帮助与鼓励，十分感谢！
+
+## 备份
+
+脚本安装的用户，可以使用 `install` 目录中的 `bak.sh`进行备份。
+
+```
+sudo bash /home/judge/HZNUOJ/judger/install/bak.sh
+```
+
+备份后的数据在 `/var/backups/` 目录下, 命名格式为 HZNUOJ_%Y%m%d.tar.bz2。
+
+百度学习crontab的用法后，可以使用 `sudo crontab -e` 定制自动备份计划，部分安装脚本中包含了自动备份，但可能需要运行上面的语句一次来激活。
+
+## 迁移
+
+首先在新服务器上做全新安装和测试，没有问题后，再迁移数据。
+
+将你需要迁移的归档复制到目标系统的`/home/judge/backup`目录下，执行下面的脚本进行恢复
+
+```shell
+cd /home/judge/backup
+sudo bash /home/judge/HZNUOJ/judger/install/restore.sh HZNUOJ_%Y%m%d.tar.bz2
+```
+脚本的第一个参数为恢复的目标归档，如果没有参数则默认为按名字排序后字典序最大的归档
