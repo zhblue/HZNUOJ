@@ -37,7 +37,7 @@
   $result = $mysqli->query($sql);// or die("Error! ".$mysqli->error);
   if ($result) {
     $row=$result->fetch_array();
-    if (mb_strlen($row['pcname'], 'utf-8')>0){
+    if (!is_null($row['pcname']) && mb_strlen($row['pcname'], 'utf-8')>0){
       $pcname = "【".$row['pcname']."】";
     } else $pcname = "";
     $seat = ($pcname!="") ? $pcname : substr_replace($row['ip'],"**",0,strpos($row['ip'],"."));
@@ -64,7 +64,7 @@
         if ($contest_id>0) {
           $sql = "SELECT `title` FROM `contest` WHERE `contest_id`='$contest_id'";
           $contest_title = $mysqli->query($sql)->fetch_array()[0];
-          if (stripos($contest_title,$OJ_NOIP_KEYWORD)!==false) {
+          if (isset($OJ_NOIP_KEYWORD) && stripos($contest_title,$OJ_NOIP_KEYWORD)!==false) {
             echo "$OJ_NOIP_KEYWORD";
             exit(0);
           }
