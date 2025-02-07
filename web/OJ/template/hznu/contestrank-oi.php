@@ -186,8 +186,8 @@
           echo "</td>\n";
           echo "<td class='rankcell'><div class='nick'";
           if(HAS_PRI("edit_contest") && $start_by_login_time && $user_start_time[$uuid]!=""){
-            echo " style='cursor: pointer;font-weight: bold;' title='登入时间：".date('m-d H:i',$user_start_time[$uuid]);
-            if($contest_time['duration']!= 0) echo "\n结束时间：".date('m-d H:i',$user_start_time[$uuid]+intval(floatval($contest_time['duration'])*3600)+intval($user_over_time[$uuid])*60);
+            echo " style='cursor: pointer;font-weight: bold;' title='登入时间：".date('Y/m/d H:i',$user_start_time[$uuid]);
+            if($contest_time['duration']!= 0) echo "\n结束时间：".date('Y/m/d H:i',$user_start_time[$uuid]+intval(floatval($contest_time['duration'])*3600)+intval($user_over_time[$uuid])*60);
             echo "'";
           } 
           echo ">$col3</div></td>\n";
@@ -226,7 +226,7 @@
               if (isset($U[$i]->p_ac_sec[$num[0]])&&$U[$i]->p_ac_sec[$num[0]]>0)
                 echo sec2str($U[$i]->p_ac_sec[$num[0]]);
               else if (isset($U[$i]->p_wa_num[$num[0]])&&$U[$i]->p_wa_num[$num[0]]>0)
-                echo "(+"+$U[$i]->p_pass_rate[$num[0]]*$problem_score[$num[0]]+")";
+                echo "(+".$U[$i]->p_pass_rate[$num[0]]*$problem_score[$num[0]].")";
             }
             //echo "<br/>".$U[$i]->p_wa_num[$num[0]]."-".$U[$i]->p_ac_sec[$num[0]]."<br/>";
             echo "</td>\n";

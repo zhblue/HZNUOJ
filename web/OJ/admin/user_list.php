@@ -228,7 +228,7 @@ if (!isset($_GET['team'])) { //查询普通账号
         if (isset($OJ_points_enable)&&$OJ_points_enable){
             $view_users[$cnt][8] = round($row->points,2);
         }
-        $view_users[$cnt][9] = round($row->strength);
+        $view_users[$cnt][9] = !is_null($row->strength)?round($row->strength):0;
         $view_users[$cnt][10] = $row->level;
         $view_users[$cnt][11] = $row->accesstime;
         $view_users[$cnt][15] = mb_strlen($row->school, 'utf-8')<=8 ? $row->school : "<div title='$row->school' style='width:150px;white-space: nowrap;text-overflow:ellipsis; overflow:hidden;'>". mb_substr($row->school,0,8,'utf-8')."...</div>";

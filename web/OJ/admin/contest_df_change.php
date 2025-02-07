@@ -10,15 +10,17 @@
 require_once("admin-header.php");
 require_once("../include/check_get_key.php");
 $clist="";
-sort($_POST['cid']);
-foreach($_POST['cid'] as $i){
+if(isset($_POST['cid'])) {
+  sort($_POST['cid']);
+  foreach($_POST['cid'] as $i){
     $i = intval($mysqli->real_escape_string($i));
     if($clist) {
         if(isset($_SESSION["m$i"])||HAS_PRI("edit_contest")) $clist.=','.$i;
   	} else{
     	if(isset($_SESSION["m$i"])||HAS_PRI("edit_contest")) $clist = $i;
   	}
-}  
+  }
+}
 
 
 $cid=intval($mysqli->real_escape_string($_GET['cid']));

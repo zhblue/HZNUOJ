@@ -159,7 +159,7 @@ if($row = $result->fetch_object()){
                 $stu[$i]["WA"]=$mysqli->query($sql)->fetch_array()[0];//用户在这个contestd活动时间内的错误代码数
                 $sql = "SELECT DISTINCT `problem_id` FROM `solution` WHERE `user_id`='$row2->user_id' AND `contest_id`='$cid' AND `result`= 4 GROUP BY `problem_id`";
                 $stu[$i]["ac_problem"]=$mysqli->query($sql)->num_rows;//截止到目前为止用户在这个contest解决了几道题目
-                if($stu[$i]["WA"]/$stu[$i]["ac_problem"]>=5){
+                if($stu[$i]["ac_problem"]!=0 && $stu[$i]["WA"]/$stu[$i]["ac_problem"]>=5){
                     $stu[$i]["WAStyle"] = "class='am-danger'"; //1题错误5次及以上，示警
                     $view[$r][$c]["alarm"]++;
                     $stu[$i]["alarm"]++;

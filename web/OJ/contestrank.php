@@ -70,11 +70,11 @@ class TM {
 }
 
 function s_cmp($A,$B){
-    if ($A->score!=$B->score) return $A->score<$B->score; //1看得分
-    else if ($A->solved!=$B->solved) return $A->solved<$B->solved;//2看AC数
-    else if ($A->time!=$B->time) return $A->time>$B->time;//3看累计耗时
-    else if ($A->time==$B->time && $A->time==0) return count($A->p_wa_num)<count($B->p_wa_num);//累计耗时都为0的情况下，谁的错误数多，谁排前面
-    else return count($A->p_wa_num)>count($B->p_wa_num);//累计耗时相等且都不为0的情况下，谁的错误数少，谁排前面
+    if ($A->score!=$B->score) return ($A->score<$B->score)?1:-1; //1看得分
+    else if ($A->solved!=$B->solved) return ($A->solved<$B->solved)?1:-1;//2看AC数
+    else if ($A->time!=$B->time) return ($A->time>$B->time)?1:-1;//3看累计耗时
+    else if ($A->time==$B->time && $A->time==0) return (array_sum($A->p_wa_num)<array_sum($B->p_wa_num))?1:-1;//累计耗时都为0的情况下，谁的错误数多，谁排前面
+    else return (array_sum($A->p_wa_num)>array_sum($B->p_wa_num))?1:-1;//累计耗时相等且都不为0的情况下，谁的错误数少，谁排前面
 }
 
 

@@ -94,7 +94,7 @@ function generate_url($data){
   $rows =$mysqli->query($sql_page)->fetch_all(MYSQLI_BOTH) or die($mysqli->error);
   if($rows) $total = $rows[0][0];
   $page_cnt = 50;
-  if(trim($_GET['keyword']) != "") { //查找结果全部显示在一页上
+  if(isset($_GET['keyword']) && trim($_GET['keyword']) != "") { //查找结果全部显示在一页上
     $page_cnt = $total? $total:1;
   }
   $view_total_page = ceil($total / $page_cnt); //计算页数
