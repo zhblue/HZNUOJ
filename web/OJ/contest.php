@@ -77,6 +77,30 @@ if (isset($_GET['cid'])){
             require("template/".$OJ_TEMPLATE."/error.php");
             exit(0);
         }
+        $start_by_login_time=intval($row->start_by_login_time);
+        $confirmlogin=false;
+        if(isset($_GET['start']) && $start_by_login_time){
+          $confirmlogin=true;
+        }
+        $contest_login_info=0;
+        if(isset($_SESSION['user_id'])) {
+          $sql="SELECT `startTime` FROM `contest_loginTime` WHERE `user_id`='".$_SESSION['user_id']."' AND `contest_id`='$cid'";
+          $contest_login_info=$mysqli->query($sql)->num_rows;
+        }
+        if (!HAS_PRI("edit_contest") && !$contest_login_info && $start_by_login_time && (!$confirmlogin || !isset($_SESSION['user_id']))){ //点击开始按钮才开始计时
+          $view_errors = "<font style='color:red;text-decoration;'>$MSG_HELP_CLICK_START</font><br>";
+          if(!isset($_SESSION['user_id'])) {
+            $view_errors .= "<form method=post action='./loginpage.php' class='am-form-inline am-text-center'>";
+          } else {
+            $view_errors .= "<form method=post action='contest.php?cid=$cid&start=1' class='am-form-inline am-text-center'>";
+          }
+          $view_errors .= "<div class='am-form-group'>";
+          $view_errors .= "<button class='am-btn am-btn-primary' type=submit>$MSG_CLICK_START</button>";
+          $view_errors .= "</div>";
+          $view_errors .= "</form>";
+          require("template/".$OJ_TEMPLATE."/error.php");
+          exit(0);
+        }
         $now=time();
         $start_time=strtotime($row->start_time);
         $end_time=strtotime($row->end_time);
@@ -199,7 +223,7 @@ if (isset($_GET['cid'])){
         if(trim($row->title)=="") $row->title=$MSG_CONTEST.$row->contest_id;
         $view_contest[$i][1]= "<a href='contest.php?cid=$row->contest_id'>$row->title";
         if($row->start_by_login_time){
-          $view_contest[$i][1] .= "<lable title='点击进入即开始计时'>&nbsp;&nbsp;&nbsp;&nbsp;<i class='am-icon-clock-o am-icon-sm'></i> ";
+          $view_contest[$i][1] .= "<lable>&nbsp;&nbsp;&nbsp;&nbsp;<i class='am-icon-clock-o am-icon-sm'></i> ";
           if($row->duration > 0) $view_contest[$i][1] .= "答题时间：".round($row->duration, 1) ." h";
           $view_contest[$i][1] .= "</lable>";
         }

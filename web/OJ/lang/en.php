@@ -317,6 +317,8 @@
   $MSG_SILVER="Silver Num";
   $MSG_BRONZE="Bronze Num";
   $MSG_enable_points_in_contest="Enable Points";
+  $MSG_CLICK_START="Click to Start Contest";
+  $MSG_HELP_CLICK_START="Click the button below to start the timed contest";
   
   $MSG_HELP_exportScore = "export the users's score in {$MSG_CONTEST}.(not {$MSG_TEAM})";
   $MSG_HELP_TeamAccount_forbid = "Team account can not use this page!";

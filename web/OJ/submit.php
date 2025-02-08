@@ -82,7 +82,7 @@ if (isset($_POST['id'])) {
         $test_run=($cid<0);
 	if($test_run) $cid=-$cid;
 	// check user if private
-	$sql="SELECT `private` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND `defunct`='N'";
+	$sql="SELECT `private`,`start_by_login_time` FROM `contest` WHERE `contest_id`='$cid' AND `start_time`<=now() AND `defunct`='N'";
 	$result=$mysqli->query($sql);
 	$rows_cnt=$result->num_rows;
 	if ($rows_cnt!=1 || getContestEndtime($user_id, $cid)<time()){
@@ -92,8 +92,31 @@ if (isset($_POST['id'])) {
 		require("template/".$OJ_TEMPLATE."/error.php");
 		exit(0);
 	}else{
-		$row=$result->fetch_array();
-		$isprivate=intval($row[0]);
+		$row=$result->fetch_object();
+		$isprivate=intval($row->private);
+
+		$start_by_login_time=intval($row->start_by_login_time);
+		$confirmlogin=false;
+		if(isset($_GET['start']) && $start_by_login_time){
+			$confirmlogin=true;
+		}
+		$sql="SELECT `startTime` FROM `contest_loginTime` WHERE `user_id`='$user_id' AND `contest_id`='$cid'";
+		$contest_login_info=$mysqli->query($sql)->num_rows;
+		if (!HAS_PRI("edit_contest") && !$contest_login_info && $start_by_login_time && (!$confirmlogin || !isset($_SESSION['user_id']))){ //点击开始按钮才开始计时
+			$view_errors = "<font style='color:red;text-decoration;'>$MSG_HELP_CLICK_START</font><br>";
+			if(!isset($_SESSION['user_id'])) {
+			  $view_errors .= "<form method=post action='./loginpage.php' class='am-form-inline am-text-center'>";
+			} else {
+			  $view_errors .= "<form method=post action='contest.php?cid=$cid&start=1' class='am-form-inline am-text-center'>";
+			}
+			$view_errors .= "<div class='am-form-group'>";
+			$view_errors .= "<button class='am-btn am-btn-primary' type=submit>$MSG_CLICK_START</button>";
+			$view_errors .= "</div>";
+			$view_errors .= "</form>";
+			require("template/".$OJ_TEMPLATE."/error.php");
+			exit(0);
+		}
+
 		$result->free();
 		if ($isprivate==1&&!isset($_SESSION['c'.$cid])){
 			$sql="SELECT count(*) FROM `privilege` WHERE `user_id`='$user_id' AND `rightstr`='c$cid'";

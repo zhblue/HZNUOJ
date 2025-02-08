@@ -89,6 +89,7 @@ if (isset($_GET['id']) && !(isset($_GET['cid']) && isset($_GET['pid'])) ) { // �
               contest
             ON
               contest.start_time<='$now' AND contest.end_time>'$now'  #problems that are in running contest
+              AND contest.defunct='N'
               AND contest.practice = 0
               AND contest_problem.contest_id=contest.contest_id
           )
@@ -100,13 +101,36 @@ else if (isset($_GET['cid']) && isset($_GET['pid'])) { // 如果是比赛中的�
     $cid=intval($_GET['cid']);
     $pid=intval($_GET['pid']);
     $is_practice = 0;
-    $sql="SELECT unix_timestamp(end_time),description FROM contest WHERE contest_id=$cid";
-    $result=$mysqli->query($sql)->fetch_array();
-    $end_time=$result[0];
-    $view_description=$result[1];
-    $sql = "SELECT practice FROM contest WHERE contest_id=$cid";
-    $is_practice = $mysqli->query($sql)->fetch_array()[0];
+    $sql="SELECT unix_timestamp(`end_time`) as `end_time`,`description`,`start_by_login_time`,`practice` FROM `contest` WHERE `contest_id`=$cid";
+    $result=$mysqli->query($sql)->fetch_object();
+    $end_time=$result->end_time;
+    $view_description=$result->description;
+    $is_practice = $result->practice;
 
+    $start_by_login_time=intval($result->start_by_login_time);
+    $confirmlogin=false;
+    if(isset($_GET['start']) && $start_by_login_time){
+      $confirmlogin=true;
+    }
+    $contest_login_info=0;
+    if(isset($_SESSION['user_id'])) {
+      $sql="SELECT * FROM `contest_loginTime` WHERE `user_id`='$uid' AND `contest_id`='$cid'";
+      $contest_login_info=$mysqli->query($sql)->num_rows;
+    }
+    if (!HAS_PRI("edit_contest") && !$contest_login_info && $start_by_login_time && (!$confirmlogin || !isset($_SESSION['user_id']))){ //点击开始按钮才开始计时
+        $view_errors = "<font style='color:red;text-decoration;'>$MSG_HELP_CLICK_START</font><br>";
+        if(!isset($_SESSION['user_id'])) {
+          $view_errors .= "<form method=post action='./loginpage.php' class='am-form-inline am-text-center'>";
+        } else {
+          $view_errors .= "<form method=post action='contest.php?cid=$cid&start=1' class='am-form-inline am-text-center'>";
+        }
+        $view_errors .= "<div class='am-form-group'>";
+        $view_errors .= "<button class='am-btn am-btn-primary' type=submit>$MSG_CLICK_START</button>";
+        $view_errors .= "</div>";
+        $view_errors .= "</form>";
+        require("template/".$OJ_TEMPLATE."/error.php");
+        exit(0);
+    }
     
     //get problem count
     //$sql = "SELECT COUNT(*) FROM contest_problem WHERE contest_id = $cid";
@@ -189,37 +213,41 @@ if ($result->num_rows!=1){
     $view_errors="";
     if(isset($_GET['id'])){
         $id=intval($_GET['id']);
-        $result->free();
-        $sql="
-SELECT contest.`contest_id`, contest.`title`, contest_problem.num
-FROM `contest_problem`,`contest`
-WHERE
-  contest.contest_id=contest_problem.contest_id
-  AND `problem_id`=$id
-  AND contest.start_time < NOW()
-  AND contest.end_time > NOW()
-  AND contest.practice = 0
-  AND contest.defunct='N'
-ORDER BY `num`
-        ";
-        //echo $sql;
-        $result=$mysqli->query($sql);
-        if($i=$result->num_rows){
-            $view_errors.= "<span class='am-text-danger am-block'>$MSG_Problem_Locked</span>";
-            for (;$i>0;$i--){
-                $row=$result->fetch_row();
-                $view_errors.= "<a href=problem.php?cid=$row[0]&pid=$row[2]>Contest $row[0]: $row[1]</a><br>";
+        if(is_in_running_contest($real_id)){
+            $result->free();
+            $sql="
+            SELECT contest.`contest_id`, contest.`title`, contest_problem.num
+            FROM `contest_problem`,`contest`
+            WHERE
+              contest.contest_id=contest_problem.contest_id
+              AND `problem_id`=$id
+              AND contest.start_time < NOW()
+              AND contest.end_time > NOW()
+              AND contest.practice = 0
+              AND contest.defunct='N'
+            ORDER BY `num`
+                    ";
+            //echo $sql;
+            $result=$mysqli->query($sql);
+            if($result->num_rows>0){
+                $view_errors.= "<span class='am-text-danger am-block'>$MSG_Problem_Locked</span>";
+                for ($i=$result->num_rows;$i>0;$i--){
+                    $row=$result->fetch_row();
+                    $view_errors.= "<a href=problem.php?cid=$row[0]&pid=$row[2]>Contest $row[0]: $row[1]</a><br>";
+                }
+            }else{
+                $view_title= "<title>$MSG_NO_SUCH_PROBLEM</title>";
+                $view_errors.= "<h2>$MSG_NO_SUCH_PROBLEM</h2>";
             }
-        }else{
-            $view_title= "<title>$MSG_NO_SUCH_PROBLEM</title>";
-            $view_errors.= "<h2>$MSG_NO_SUCH_PROBLEM</h2>";
+            require("template/".$OJ_TEMPLATE."/error.php");
+            exit(0);
         }
     }else{
         $view_title= "<title>$MSG_NO_SUCH_PROBLEM</title>";
         $view_errors.= "<h2>$MSG_NO_SUCH_PROBLEM</h2>";
+        require("template/".$OJ_TEMPLATE."/error.php");
+        exit(0);
     }
-    require("template/".$OJ_TEMPLATE."/error.php");
-    exit(0);
 }else{
     $problemrow=$result->fetch_object();
     $view_title= $problemrow->title;

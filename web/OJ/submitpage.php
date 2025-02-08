@@ -77,11 +77,34 @@ WHERE
     $pid=intval($_GET['pid']);
 
     /* 获取该场比赛是否对用户有限制 start */
-    $sql_tmp = "SELECT user_limit,langmask FROM contest WHERE contest_id='$cid'";
+    $sql_tmp = "SELECT `user_limit`,`langmask`,`start_by_login_time` FROM `contest` WHERE `contest_id`='$cid'";
     $result_tmp = $mysqli->query($sql_tmp);
     $row_tmp = $result_tmp->fetch_object();
     $user_limit = $row_tmp->user_limit=="Y"?1:0;
     $contest_langmask = $row_tmp->langmask;
+
+    $start_by_login_time=intval($row_tmp->start_by_login_time);
+		$confirmlogin=false;
+		if(isset($_GET['start']) && $start_by_login_time){
+			$confirmlogin=true;
+		}
+		$sql_tmp="SELECT `startTime` FROM `contest_loginTime` WHERE `user_id`='$uid' AND `contest_id`='$cid'";
+		$contest_login_info=$mysqli->query($sql_tmp)->num_rows;
+		if (!HAS_PRI("edit_contest") && !$contest_login_info && $start_by_login_time && (!$confirmlogin || !isset($_SESSION['user_id']))){ //点击开始按钮才开始计时
+      $view_errors = "<font style='color:red;text-decoration;'>$MSG_HELP_CLICK_START</font><br>";
+      if(!isset($_SESSION['user_id'])) {
+        $view_errors .= "<form method=post action='./loginpage.php' class='am-form-inline am-text-center'>";
+      } else {
+        $view_errors .= "<form method=post action='contest.php?cid=$cid&start=1' class='am-form-inline am-text-center'>";
+      }
+      $view_errors .= "<div class='am-form-group'>";
+      $view_errors .= "<button class='am-btn am-btn-primary' type=submit>$MSG_CLICK_START</button>";
+      $view_errors .= "</div>";
+      $view_errors .= "</form>";
+      require("template/".$OJ_TEMPLATE."/error.php");
+      exit(0);
+		}
+
     $result_tmp->free();
     /* 获取该场比赛是否对用户有限制 end */
 

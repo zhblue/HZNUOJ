@@ -57,14 +57,21 @@
     <!-- 选择班级后自动跳转页面的js代码 start -->
     <script type="text/javascript">
       var oSelect=document.getElementById("class");
+      var cid = <?php echo $cid?>;
+      var real_name_mode = <?php echo $real_name_mode?"true":"false" ?>;
       oSelect.onchange=function() { //当选项改变时触发
         var valOption=this.options[this.selectedIndex].value; //获取option的value
-        var url = window.location.search;
-        var cid = <?php echo $cid?>;
-        var real_name_mode = <?php echo $real_name_mode?"true":"false" ?>;
         var url = window.location.pathname+"?cid="+cid;
         if(real_name_mode) url += "&real_name_mode";
         url += "&class="+valOption;
+        window.location.href = url;
+      }
+      function del_contest_user(uid) {
+        var valOption=oSelect.options[oSelect.selectedIndex].value;
+        var url = window.location.pathname+"?cid="+cid;
+        if(real_name_mode) url += "&real_name_mode";
+        url += "&class="+valOption;
+        url += "&deluid="+uid;
         window.location.href = url;
       }
     </script>
@@ -196,11 +203,16 @@
           echo "</td>\n";
           echo "<td class='rankcell'><div class='nick'";
           if(HAS_PRI("edit_contest") && $start_by_login_time && $user_start_time[$uuid]!=""){
-            echo " style='cursor: pointer;font-weight: bold;' title='登入时间：".date('Y/m/d H:i',$user_start_time[$uuid]);
+            echo " style='font-weight: bold;' title='登入时间：".date('Y/m/d H:i',$user_start_time[$uuid]);
             if($contest_time['duration']!= 0) echo "\n结束时间：".date('Y/m/d H:i',$user_start_time[$uuid]+intval(floatval($contest_time['duration'])*3600)+intval($user_over_time[$uuid])*60);
             echo "'";
           } 
-          echo ">$col3</div></td>\n";
+          echo ">$col3";
+          if(HAS_PRI("edit_contest") && $start_by_login_time && $user_start_time[$uuid]!="" && !isset($U[$i]->p_wa_num) && $U[$i]->solved==0){
+            //没有提交过，但已经登入的人可以取消登入记录
+            echo "<span class='am-icon-remove' style='margin-left: 5px; cursor: pointer;' onclick='javascript:if(confirm(\" $MSG_DEL ?\")) del_contest_user(\"$uuid\")'></span>";
+          }
+          echo "</div></td>\n";
           echo "<td class='rankcell'>$uscore</td>\n";
           echo "<td class='rankcell'><a href=\"status.php?user_id=$uuid&cid=$cid\">$usolved</a></td>\n";
           echo "<td class='rankcell'>".sec2str($U[$i]->time)."</td>";

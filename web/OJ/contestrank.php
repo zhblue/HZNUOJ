@@ -280,12 +280,14 @@ if($start_by_login_time || $enable_overtime){
     }
 }
 
+$U2=array();
 for ($i=0; $i<$rows_cnt; $i++){
     $row=$result[$i];
     $n_user=$row['user_id'];
     if (strcmp($user_name,$n_user)){
         $U[$user_cnt]=new TM();
         $U[$user_cnt]->user_id=$row['user_id'];
+        $U2[$user_cnt]=$row['user_id'];
         if($room_id>0 && $row['real_name']!="") $U[$user_cnt]->nick=$row['real_name']; else $U[$user_cnt]->nick=$row['nick'];//座位表模式下昵称显示为真名，方便教师监督
         if(!$is_excluded[$row['user_id']]){ //不参加排名的就不显示座位号了
             $tmp = getPCNameByUserID($row['user_id'], $cid, $room_id);
@@ -338,6 +340,7 @@ $res=$mysqli->query($sql) or die($mysqli->error);
 while($row=$res->fetch_object()) {
     $U[$user_cnt]=new TM();
     $U[$user_cnt]->user_id=$row->user_id;
+    $U2[$user_cnt]=$row->user_id;
     if($room_id>0 && $row->real_name!="") $U[$user_cnt]->nick=$row->real_name; else $U[$user_cnt]->nick=$row->nick;//座位表模式下昵称显示为真名，方便教师监督
     if(!$is_excluded[$row->user_id]){ //不参加排名的就不显示座位号了
         $tmp = getPCNameByUserID($row->user_id, $cid, $room_id);
@@ -351,6 +354,21 @@ while($row=$res->fetch_object()) {
 $haveNotStart_ulist=array_flip($haveNotStart_ulist);
 /*查找在参赛名单内（指定的比赛账号，或者指定的竞赛&作业用户），但还未开始提交代码的用户 end */
 
+/** contest start by login time delete user **/
+$delUindex = -1;
+$deluid = "";
+if(isset($_GET['deluid']) && $_GET['deluid'] != "") {
+    $deluid = $mysqli->real_escape_string($_GET['deluid']);
+    $delUindex = array_search($deluid, $U2);
+}
+if(isset($_GET['deluid']) && $deluid != "" && $delUindex>-1 && HAS_PRI("edit_contest") && $start_by_login_time 
+    && $user_start_time[$deluid]!="" && !isset($U[$delUindex]->p_wa_num) && $U[$delUindex]->solved==0){ // contest start by login time
+    array_splice($U, $delUindex, 1);
+    $user_cnt--;
+    $sql="DELETE FROM `contest_loginTime` WHERE `contest_id`='$cid' AND `user_id`='".$deluid."'";
+    $mysqli->query($sql) or die($mysqli->error);
+}
+/** contest start by login time delete user **/
 //firstblood 找每题第一个解决的人
 $first_blood=array();
 foreach($pid_nums as $num){
