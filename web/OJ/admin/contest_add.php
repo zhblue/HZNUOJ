@@ -22,9 +22,9 @@
     $starttime=$_POST['startdate']." ".intval($_POST['shour']).":".intval($_POST['sminute']).":00";
     $endtime=$_POST['enddate']." ".intval($_POST['ehour']).":".intval($_POST['eminute']).":00";    
 
-    $title=$mysqli->real_escape_string($_POST['title']);
+    $title=$mysqli->real_escape_string(trim($_POST['title']));
     $private=$mysqli->real_escape_string($_POST['private']);
-    $password=$mysqli->real_escape_string($_POST['password']);
+    $password=$mysqli->real_escape_string(trim($_POST['password']));
 	  $user_id=$_SESSION['user_id'];
     $description=$mysqli->real_escape_string(str_replace("<br />\r\n<!---->","",$_POST['description']));//火狐浏览器中kindeditor会在空白内容的末尾加入<br />\r\n<!---->
     $description = str_replace("<!---->","",$description);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
@@ -50,10 +50,6 @@
     $duration = floatval(($_POST['duration']));
     $enable_overtime = intval(($_POST['enable_overtime']));
     $enable_points_in_contest = intval(($_POST['enable_points_in_contest']));
-    $title = stripslashes ($title);
-    $private = stripslashes ($private);
-    $password = stripslashes ($password);
-    $description = stripslashes ($description);
 
     $lang=$_POST['lang'];
     $langmask=0;

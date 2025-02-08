@@ -22,13 +22,11 @@
     }
   } 
   require_once("./include/login-".$OJ_LOGIN_MOD.".php");
-  $user_id=$_POST['user_id'];
-  $password=$_POST['password'];
+  $user_id=$mysqli->real_escape_string(trim($_POST['user_id']));
+  $password=$mysqli->real_escape_string(trim($_POST['password']));
   $cid = $_POST['contest_id'];
 //  echo $password;
 //  echo $user_id."<br>";
-  $user_id= stripslashes($user_id);
-  $password= stripslashes($password);
   if (isset($OJ_login2mycontest) && $OJ_login2mycontest && !IS_ADMIN($user_id)){
     $go = "window.location.href='contest.php?my';";
   } else if (isset($_SESSION['gotoIndex'])){
@@ -45,7 +43,7 @@
   if ($login) { // 登录成功
     //echo $login;
     $_SESSION['user_id']=$login;
-	  $sql="SELECT `rightstr` FROM `privilege` WHERE `user_id`='".$mysqli->real_escape_string($user_id)."'";
+	  $sql="SELECT `rightstr` FROM `privilege` WHERE `user_id`='".$user_id."'";
     $result=$mysqli->query($sql);
     echo $mysqli->error;
     while ($row=$result->fetch_array()){

@@ -29,16 +29,13 @@ if(isset($_POST['do'])){
 	//echo $_POST['passwd'];
 	require_once("../include/my_func.inc.php");
 	
-	$user_id=$_POST['user_id'];
-    $passwd =$_POST['passwd'];
+	$user_id=$mysqli->real_escape_string(trim($_POST['user_id']));
+    $passwd =$mysqli->real_escape_string(trim($_POST['passwd']));
     if(get_order(get_group($user_id))<=get_order(get_group(""))){
     	$view_error="You can't edit this user!";
 		require_once("error.php");
 		exit(1);
     }
-	$user_id = stripslashes ( $user_id);
-	$passwd = stripslashes ( $passwd);
-	$user_id=$mysqli->real_escape_string($user_id);
 	$passwd=pwGen($passwd);
 	if(IS_ADMIN($user_id)){
 		echo "He/Her is an administrator!";

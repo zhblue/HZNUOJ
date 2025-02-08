@@ -47,18 +47,11 @@ if (isset($_GET['vid'])){
 //send mail page
 //send mail
 if(isset($_POST['to_user'])){
-    $to_user = $_POST ['to_user'];
-    $title = $_POST ['title'];
-    $content = $_POST ['content'];
-    $from_user=$_SESSION['user_id'];
-    $to_user = stripslashes ( $to_user);
-    $title = stripslashes ( $title);
-    $content = stripslashes ( $content );
+    $to_user=$mysqli->real_escape_string(trim($_POST ['to_user']));
+    $title=$mysqli->real_escape_string(trim($_POST ['title']));
+    $content=$mysqli->real_escape_string(trim($_POST ['content']));
+    $from_user=$mysqli->real_escape_string(trim($_SESSION['user_id']));
     $title = RemoveXSS( $title);
-    $to_user=$mysqli->real_escape_string($to_user);
-    $title=$mysqli->real_escape_string($title);
-    $content=$mysqli->real_escape_string($content);
-    $from_user=$mysqli->real_escape_string($from_user);
     $sql="select 1 from users where user_id='$to_user' ";
     $res=$mysqli->query($sql);
     if ($res&&$res->num_rows<1){

@@ -16,9 +16,7 @@ if (!HAS_PRI("edit_news")) {
 <?php
 if (isset($_POST['content'])) {
     require_once("../include/check_post_key.php");
-    $content = $_POST ['content'];
-    $content = stripslashes ( $content );
-    $content=$mysqli->real_escape_string($content);
+    $content=$mysqli->real_escape_string($_POST['content']);
     
     $sql="UPDATE `faqs` set `content`='$content'";
     //echo $sql;

@@ -17,19 +17,15 @@
   require_once("../include/db_info.inc.php");
   if (isset($_POST['news_id'])) {
     require_once("../include/check_post_key.php");
-    $title = $_POST ['title'];
-    $content = $_POST ['content'];
-    $importance = $_POST ['importance'];
-    $user_id=$_SESSION['user_id'];
-    $news_id=intval($_POST['news_id']);
-    $title = stripslashes ( $title);
-    $content = stripslashes ( $content );
-    $title=$mysqli->real_escape_string($title);
-    $content=$mysqli->real_escape_string(str_replace("<br />\r\n<!---->","",$content));//火狐浏览器中kindeditor会在空白内容的末尾加入<br />\r\n<!---->
+    $title=$mysqli->real_escape_string(trim($_POST['title']));
+    $content=$mysqli->real_escape_string($_POST['content']);
+    $importance=$mysqli->real_escape_string($_POST['importance']);
+    $user_id=$mysqli->real_escape_string($_SESSION['user_id']);
+    $news_id=intval($mysqli->real_escape_string($_POST['news_id']));
+    $content=str_replace("<br />\r\n<!---->","",$content);//火狐浏览器中kindeditor会在空白内容的末尾加入<br />\r\n<!---->
     $content = str_replace("<!---->","",$content);//火狐浏览器中kindeditor会在内容的末尾加入<!---->
-    $user_id=$mysqli->real_escape_string($user_id);
 
-    $sql="UPDATE `news` set `title`='$title',`time`=now(),`content`='$content',user_id='$user_id', importance='$importance' WHERE `news_id`=$news_id";
+    $sql="UPDATE `news` set `title`='$title',`time`=now(),`content`='$content',`user_id`='$user_id', `importance`='$importance' WHERE `news_id`=$news_id";
     //echo $sql;
     $mysqli->query($sql) or die($mysqli->error);
     echo "<script type='text/javascript'>window.location.href='news_list.php';</script>";

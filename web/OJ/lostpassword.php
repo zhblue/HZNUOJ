@@ -24,8 +24,6 @@ if (isset($_POST['user_id'])) {
         echo "</script>";
         exit(0);
     }
-    $lost_user_id=stripslashes($lost_user_id);
-    $lost_email=stripslashes($lost_email);
     $sql="SELECT `email` FROM `users` WHERE `user_id`='$lost_user_id'";
     $result=$mysqli->query($sql);
     $row = $result->fetch_array();

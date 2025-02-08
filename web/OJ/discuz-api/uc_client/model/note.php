@@ -121,7 +121,7 @@ class notemodel {
 			if(is_string($method) && !empty($method)) {
 				parse_str($note['getdata'], $note['getdata']);
 				// if(get_magic_quotes_gpc()) {
-					$note['getdata'] = $this->base->dstripslashes($note['getdata']);
+				// 	$note['getdata'] = $this->base->dstripslashes($note['getdata']);
 				// }
 				$note['postdata'] = xml_unserialize($note['postdata']);
 				$response = $uc_note->$method($note['getdata'], $note['postdata']);

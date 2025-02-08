@@ -135,13 +135,8 @@ $language=intval($_POST['language']);
 if ($language>count($language_name) || $language<0) $language=0;
 $language=strval($language);
 
-
-$source=$_POST['source'];
-$input_text=$_POST['input_text'];
-$source=stripslashes($source);
-$input_text=stripslashes($input_text);
-$input_text=preg_replace ( "/(\r\n)/", "\n", $input_text );
-$source=$mysqli->real_escape_string($source);
+$source=$mysqli->real_escape_string(trim($_POST['source']));
+$input_text=preg_replace ( "/(\r\n)/", "\n", $_POST['input_text'] );
 $input_text=$mysqli->real_escape_string($input_text);
 $source_user=$source;
 if($test_run) $id=-$id;

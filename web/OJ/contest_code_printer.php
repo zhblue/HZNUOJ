@@ -20,8 +20,7 @@ if (isset($_GET['cid'])){
     $rows_cnt=$result->num_rows;
     $contest_ok=true;
     $password="";
-    if(isset($_POST['pwd'])) $password=$mysqli->real_escape_string($_POST['pwd']);
-    $password = stripslashes ($password);
+    if(isset($_POST['pwd'])) $password=$mysqli->real_escape_string(trim($_POST['pwd']));
     if ($rows_cnt==0){
         $result->free();
         $view_title= "比赛已经关闭!";
