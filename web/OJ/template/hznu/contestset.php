@@ -15,7 +15,7 @@ if(isset($_GET['my'])) $title = $MSG_MY.$MSG_CONTEST;
 require_once("header.php");
 if(isset($_GET['type'])) $args['type']=htmlentities(trim($_GET['type']));
 if(isset($_GET['runstatus'])) $args['runstatus']=htmlentities(trim($_GET['runstatus']));
-if(isset($_GET['search'])) $args['search']=urlencode(htmlentities($search));
+if(isset($_GET['search'])) $args['search']=htmlentities(htmlentities($search));
 if(isset($page)) $args['page']=$page;
 function generate_url($data){
     global $args, $getMy;
